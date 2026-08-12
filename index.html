@@ -1,0 +1,1781 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Crash Out — Safe Heist (v3 / theo Concept Doc 1.0)</title>
+<style>
+  :root{
+    --bg0:#0b0a1f; --bg1:#171334;
+    --gold:#ffce4d; --gold2:#ff9c2f;
+    --go:#33e08a; --go2:#12b866;
+    --alarm:#ff4f66; --alarm2:#c9203c;
+    --myst:#b17cff; --safe:#4fe0b0;
+    --ink:#f4f0ff; --sub:#b7add9;
+    --panel:rgba(255,255,255,.06); --line:rgba(255,255,255,.13);
+    --panel2:rgba(10,8,26,.62);
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;height:100%;}
+  body{
+    font-family:"Baloo 2","Trebuchet MS","Segoe UI",system-ui,Arial,sans-serif;
+    background:
+      radial-gradient(1200px 500px at 50% -10%, #33245f 0%, transparent 60%),
+      radial-gradient(900px 500px at 50% 120%, #1a2b52 0%, transparent 55%),
+      linear-gradient(180deg,var(--bg1),var(--bg0));
+    color:var(--ink); overflow:hidden; user-select:none;
+  }
+  #app{height:100%;display:flex;flex-direction:column;max-width:1280px;margin:0 auto;padding:8px 12px 10px;}
+  .ico{width:1em;height:1em;vertical-align:-.12em;display:inline-block;}
+
+  /* ---------- topbar ---------- */
+  #topbar{display:flex;align-items:center;gap:8px;padding:2px 2px 8px;flex:none;}
+  .logo{
+    width:38px;height:38px;border-radius:11px;flex:none;
+    background:conic-gradient(from 200deg,var(--gold),var(--gold2),var(--alarm),var(--gold));
+    box-shadow:0 6px 18px rgba(255,160,40,.35),inset 0 0 0 3px rgba(0,0,0,.25);
+    display:grid;place-items:center;
+  }
+  .logo svg{width:22px;height:22px;}
+  .titles{line-height:1;min-width:0;margin-right:auto;}
+  .titles h1{
+    margin:0;font-size:clamp(15px,2.6vw,24px);font-weight:800;letter-spacing:.5px;
+    background:linear-gradient(180deg,#fff,#ffcf5a 70%,#ff9b2f);
+    -webkit-background-clip:text;background-clip:text;color:transparent;white-space:nowrap;
+  }
+  .titles p{margin:2px 0 0;color:var(--sub);font-size:10px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;}
+  #resbar{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end;}
+  .res{
+    display:flex;align-items:center;gap:5px;background:var(--panel2);border:1px solid var(--line);
+    border-radius:11px;padding:5px 9px;font-weight:800;font-size:13px;white-space:nowrap;
+  }
+  .res svg{width:16px;height:16px;flex:none;}
+  .res small{color:var(--sub);font-size:10px;font-weight:700;margin-left:1px;}
+  .res.pick{cursor:pointer;}
+  .res.pick:hover{border-color:var(--gold);}
+  .iconbtn{
+    flex:none;width:34px;height:34px;border-radius:10px;border:1px solid var(--line);
+    background:var(--panel);color:var(--ink);font-size:16px;cursor:pointer;transition:.15s;
+  }
+  .iconbtn:hover{background:rgba(255,255,255,.12);}
+
+  /* ---------- screens ---------- */
+  #screens{flex:1 1 auto;min-height:0;position:relative;}
+  .screen{position:absolute;inset:0;display:none;flex-direction:column;min-height:0;}
+  .screen.on{display:flex;}
+  .scroll{overflow-y:auto;overflow-x:hidden;flex:1 1 auto;min-height:0;-webkit-overflow-scrolling:touch;padding-right:2px;}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:12px 14px;margin-bottom:10px;}
+  .card h3{margin:0 0 8px;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:var(--sub);font-weight:800;}
+  .muted{color:var(--sub);font-size:12px;line-height:1.5;}
+
+  /* ---------- map ---------- */
+  .areahead{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+  .areaicon{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;font-size:22px;background:rgba(255,255,255,.07);border:1px solid var(--line);flex:none;}
+  .areahead .nm{font-size:clamp(15px,2.4vw,20px);font-weight:800;line-height:1.1;}
+  .areahead .sb{font-size:11px;color:var(--sub);font-weight:700;letter-spacing:1.5px;text-transform:uppercase;}
+  .bar{height:12px;border-radius:99px;background:rgba(0,0,0,.35);overflow:hidden;border:1px solid var(--line);}
+  .bar > i{display:block;height:100%;background:linear-gradient(90deg,var(--gold2),var(--gold));border-radius:99px;transition:width .4s;}
+  .barrow{display:flex;justify-content:space-between;font-size:11px;font-weight:800;color:var(--sub);margin-top:5px;}
+
+  #track{display:flex;gap:10px;overflow-x:auto;padding:6px 2px 12px;scroll-behavior:smooth;}
+  .node{
+    flex:none;width:78px;height:96px;border-radius:14px;border:1px solid var(--line);
+    background:rgba(255,255,255,.05);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+    cursor:pointer;transition:.15s;position:relative;
+  }
+  .node .n{font-size:19px;font-weight:800;}
+  .node .l{font-size:9px;letter-spacing:1px;color:var(--sub);font-weight:800;text-transform:uppercase;}
+  .node .lt{font-size:11px;font-weight:800;color:var(--gold);display:flex;align-items:center;gap:3px;}
+  .node .lt svg{width:12px;height:12px;}
+  .node.done{background:rgba(51,224,138,.13);border-color:rgba(51,224,138,.4);}
+  .node.done .n{color:var(--go);}
+  .node.cur{background:linear-gradient(180deg,rgba(255,206,77,.22),rgba(255,156,47,.10));border-color:var(--gold);box-shadow:0 0 0 2px rgba(255,206,77,.25),0 8px 20px rgba(255,156,47,.18);}
+  .node.lock{opacity:.38;cursor:not-allowed;}
+  .node.boss{border-color:var(--alarm);}
+  .node.boss .l{color:var(--alarm);}
+  .node .flag{position:absolute;top:-7px;right:-5px;font-size:14px;}
+
+  .feed{display:flex;flex-direction:column;gap:5px;}
+  .feedrow{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;padding:5px 8px;border-radius:9px;background:rgba(0,0,0,.22);}
+  .feedrow .who{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink);}
+  .feedrow .rt{font-weight:800;}
+  .feedrow.ok .rt{color:var(--go);}
+  .feedrow.bad .rt{color:var(--alarm);}
+  .feedrow .tag{font-size:9px;letter-spacing:1px;color:var(--sub);text-transform:uppercase;}
+
+  .btn{
+    border:none;border-radius:14px;cursor:pointer;color:#12102a;font-weight:800;letter-spacing:.4px;
+    padding:13px 16px;font-size:15px;transition:.08s;text-transform:uppercase;line-height:1.15;width:100%;
+  }
+  .btn.go{background:linear-gradient(180deg,#5cf0a5,var(--go2));box-shadow:0 5px 0 #0a7d47,0 10px 22px rgba(18,184,102,.35);}
+  .btn.gold{color:#3a2400;background:linear-gradient(180deg,#ffe07a,var(--gold2));box-shadow:0 5px 0 #b76b12,0 10px 22px rgba(255,156,47,.35);}
+  .btn.ghost{background:transparent;color:var(--sub);border:1px solid var(--line);box-shadow:none;}
+  .btn.ghost:hover{color:var(--ink);border-color:var(--gold);}
+  .btn:not(:disabled):active{transform:translateY(4px);}
+  .btn.go:not(:disabled):active{box-shadow:0 1px 0 #0a7d47;}
+  .btn.gold:not(:disabled):active{box-shadow:0 1px 0 #b76b12;}
+  .btn:disabled{background:linear-gradient(180deg,#4a4668,#332f4d);color:#7d789c;box-shadow:0 5px 0 #211d38;cursor:not-allowed;}
+  .btn .sub{display:block;font-size:.66em;font-weight:700;opacity:.9;margin-top:2px;text-transform:none;letter-spacing:0;}
+  .btnrow{display:flex;gap:10px;}
+
+  /* ---------- play ---------- */
+  #stage{
+    position:relative;flex:1 1 auto;border-radius:18px;overflow:hidden;min-height:0;background:#0c0a22;
+    box-shadow:0 20px 50px rgba(0,0,0,.5),inset 0 0 0 2px rgba(255,255,255,.05);
+  }
+  #game{position:absolute;inset:0;width:100%;height:100%;display:block;}
+  #hud{position:absolute;top:0;left:0;right:0;display:flex;align-items:flex-start;justify-content:space-between;gap:8px;padding:12px 14px;pointer-events:none;}
+  .pill{background:var(--panel2);border:1px solid var(--line);border-radius:13px;padding:7px 12px;backdrop-filter:blur(8px);min-width:104px;}
+  .pill.right{text-align:right;}
+  .pill .label{display:block;font-size:9px;letter-spacing:1.8px;color:var(--sub);font-weight:800;text-transform:uppercase;}
+  .pill .value{display:flex;align-items:center;gap:5px;font-size:clamp(15px,2.2vw,21px);font-weight:800;margin-top:2px;}
+  .pill.right .value{justify-content:flex-end;}
+  .pill .value svg{width:16px;height:16px;flex:none;}
+  #lootVal{color:var(--go);}
+  #safeVal{color:var(--ink);}
+  .mult{text-align:center;flex:1;}
+  #rateVal{
+    display:inline-block;font-size:clamp(30px,6.2vw,60px);font-weight:800;line-height:1;
+    color:#fff;text-shadow:0 0 22px rgba(255,206,77,.35);transition:color .2s;
+  }
+  .mult.live #rateVal{color:var(--gold);text-shadow:0 0 30px rgba(255,206,77,.75);}
+  .mult.crash #rateVal{color:var(--alarm);text-shadow:0 0 30px rgba(255,79,102,.8);}
+  .mult.win #rateVal{color:var(--go);text-shadow:0 0 30px rgba(51,224,138,.8);}
+  .multLabel{display:block;font-size:9px;letter-spacing:3px;color:var(--sub);font-weight:800;margin-top:2px;text-transform:uppercase;}
+  #lockPill{margin-top:6px;display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:800;color:var(--safe);background:rgba(79,224,176,.14);border:1px solid rgba(79,224,176,.4);border-radius:99px;padding:2px 8px;}
+
+  #hint{
+    position:absolute;left:50%;bottom:12px;transform:translateX(-50%);
+    background:var(--panel2);border:1px solid var(--line);border-radius:99px;
+    padding:6px 16px;font-size:12.5px;font-weight:700;color:var(--ink);backdrop-filter:blur(8px);
+    pointer-events:none;text-align:center;max-width:92%;
+  }
+  #hint.warn{border-color:var(--alarm);color:#ffd7dd;background:rgba(80,10,24,.72);animation:pulse .7s infinite alternate;}
+  @keyframes pulse{from{box-shadow:0 0 0 0 rgba(255,79,102,.0);}to{box-shadow:0 0 18px 2px rgba(255,79,102,.5);}}
+
+  #choiceBox{
+    position:absolute;left:50%;bottom:56px;transform:translateX(-50%);display:none;gap:8px;
+    background:var(--panel2);border:1px solid var(--alarm);border-radius:16px;padding:10px;backdrop-filter:blur(10px);
+    flex-direction:column;align-items:center;width:min(340px,92%);
+  }
+  #choiceBox.on{display:flex;}
+  #choiceBox .t{font-size:12px;font-weight:800;color:#ffd7dd;text-align:center;line-height:1.4;}
+  #choiceBox .btnrow{width:100%;}
+  #choiceBox .btn{padding:10px;font-size:13px;}
+
+  .ctlrow{flex:none;margin-top:10px;display:flex;gap:10px;}
+  #escapeBtn{flex:2;}
+  .ctlrow .btn.ghost{flex:1;max-width:130px;}
+
+  /* ---------- overlay / modal ---------- */
+  .ov{position:fixed;inset:0;background:rgba(6,5,18,.86);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:14px;z-index:20;}
+  .ov.on{display:flex;}
+  .sheet{width:min(460px,100%);background:linear-gradient(180deg,#211a45,#14102e);border:1px solid var(--line);border-radius:20px;padding:16px;box-shadow:0 30px 70px rgba(0,0,0,.6);max-height:100%;overflow-y:auto;}
+  .sheet h2{margin:0 0 2px;font-size:clamp(20px,4vw,28px);font-weight:800;text-align:center;letter-spacing:.5px;}
+  .sheet .sh{text-align:center;color:var(--sub);font-size:12px;font-weight:700;margin-bottom:12px;}
+  .bigloot{display:flex;align-items:center;justify-content:center;gap:8px;font-size:clamp(26px,5.5vw,38px);font-weight:800;color:var(--gold);margin:6px 0 4px;}
+  .bigloot svg{width:30px;height:30px;}
+  .kv{display:flex;justify-content:space-between;font-size:12.5px;font-weight:700;padding:6px 0;border-bottom:1px dashed rgba(255,255,255,.09);}
+  .kv:last-of-type{border-bottom:none;}
+  .kv span:first-child{color:var(--sub);}
+  .haul{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin:8px 0;}
+  .hitem{display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.07);border:1px solid var(--line);border-radius:10px;padding:5px 9px;font-size:12px;font-weight:800;}
+  .hitem svg{width:14px;height:14px;}
+  .adbtn{position:relative;}
+  .adbtn::after{content:"AD";position:absolute;top:-6px;right:-6px;background:var(--alarm);color:#fff;font-size:9px;font-weight:800;border-radius:6px;padding:1px 5px;letter-spacing:1px;}
+
+  /* ---------- crew / shop / board ---------- */
+  .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;}
+  .crewcard{background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:14px;padding:11px;cursor:pointer;transition:.15s;}
+  .crewcard.eq{border-color:var(--gold);background:linear-gradient(180deg,rgba(255,206,77,.16),rgba(255,255,255,.04));}
+  .crewcard.lockd{opacity:.55;}
+  .crewcard .ch{display:flex;align-items:center;gap:8px;margin-bottom:5px;}
+  .crewcard .av{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font-size:18px;background:rgba(0,0,0,.3);flex:none;}
+  .crewcard .nm{font-weight:800;font-size:14px;}
+  .crewcard .pk{font-size:11.5px;color:var(--sub);line-height:1.45;}
+  .frag{margin-top:7px;display:flex;align-items:center;gap:6px;font-size:10.5px;font-weight:800;color:var(--myst);}
+  .frag .bar{flex:1;height:7px;}
+  .frag .bar > i{background:linear-gradient(90deg,#7d4fd6,var(--myst));}
+
+  .shoprow{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:13px;padding:10px;margin-bottom:8px;}
+  .shoprow .si{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;background:rgba(0,0,0,.3);flex:none;}
+  .shoprow .si svg{width:20px;height:20px;}
+  .shoprow .sm{flex:1;min-width:0;}
+  .shoprow .sn{font-weight:800;font-size:13.5px;}
+  .shoprow .sd{font-size:11px;color:var(--sub);}
+  .shoprow button{border:none;border-radius:10px;padding:9px 13px;font-weight:800;font-size:12.5px;cursor:pointer;color:#3a2400;background:linear-gradient(180deg,#ffe07a,var(--gold2));white-space:nowrap;}
+  .shoprow.hot{border-color:var(--gold);background:linear-gradient(180deg,rgba(255,206,77,.16),rgba(255,255,255,.04));}
+
+  .lbrow{display:flex;align-items:center;gap:9px;padding:7px 9px;border-radius:10px;background:rgba(0,0,0,.22);margin-bottom:5px;font-size:12.5px;font-weight:700;}
+  .lbrow .rk{width:22px;text-align:center;font-weight:800;color:var(--sub);}
+  .lbrow.me{background:linear-gradient(90deg,rgba(255,206,77,.2),rgba(255,255,255,.04));border:1px solid rgba(255,206,77,.4);}
+  .lbrow .rt{margin-left:auto;font-weight:800;color:var(--gold);}
+  .tabs{display:flex;gap:6px;margin-bottom:9px;}
+  .tab{flex:1;padding:7px;border-radius:10px;border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--sub);font-weight:800;font-size:12px;cursor:pointer;text-transform:uppercase;letter-spacing:1px;}
+  .tab.on{background:rgba(255,206,77,.16);border-color:var(--gold);color:var(--ink);}
+
+  /* ---------- minigame ---------- */
+  #miniStage{position:relative;flex:1 1 auto;border-radius:18px;overflow:hidden;min-height:0;background:#08071a;box-shadow:inset 0 0 0 2px rgba(255,255,255,.05);}
+  #miniCanvas{position:absolute;inset:0;width:100%;height:100%;display:block;}
+  #miniHud{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;padding:10px;}
+  #miniRate{font-size:clamp(44px,11vw,88px);font-weight:800;line-height:1;color:#fff;text-shadow:0 0 30px rgba(255,206,77,.5);}
+  #miniRate.live{color:var(--gold);}
+  #miniRate.bad{color:var(--alarm);}
+  #miniRate.win{color:var(--go);}
+  #miniMsg{margin-top:6px;font-size:13px;font-weight:800;color:var(--sub);text-align:center;max-width:90%;}
+  #miniTop{position:absolute;top:10px;left:12px;right:12px;display:flex;justify-content:space-between;font-size:11px;font-weight:800;color:var(--sub);}
+
+  /* ---------- nav ---------- */
+  #nav{flex:none;display:flex;gap:6px;margin-top:9px;}
+  .nb{
+    flex:1;border:1px solid var(--line);background:var(--panel);border-radius:13px;padding:7px 4px;color:var(--sub);
+    font-weight:800;font-size:10px;letter-spacing:.6px;cursor:pointer;text-transform:uppercase;
+    display:flex;flex-direction:column;align-items:center;gap:2px;transition:.15s;
+  }
+  .nb i{font-style:normal;font-size:16px;line-height:1;}
+  .nb.on{color:var(--ink);border-color:var(--gold);background:rgba(255,206,77,.14);}
+
+  /* ---------- toast / QA ---------- */
+  #toast{position:fixed;left:50%;bottom:80px;transform:translateX(-50%) translateY(20px);opacity:0;pointer-events:none;
+    background:rgba(10,8,26,.94);border:1px solid var(--gold);border-radius:12px;padding:9px 16px;font-weight:800;font-size:13px;
+    transition:.25s;z-index:60;max-width:90vw;text-align:center;}
+  #toast.on{opacity:1;transform:translateX(-50%) translateY(0);}
+  #qa .sheet{width:min(520px,100%);}
+  .qarow{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;}
+  .qarow button,.qarow select{
+    border:1px solid var(--line);background:rgba(255,255,255,.06);color:var(--ink);border-radius:9px;
+    padding:7px 10px;font-weight:800;font-size:11.5px;cursor:pointer;font-family:inherit;
+  }
+  .qarow button:hover{border-color:var(--gold);}
+  .qarow button.on{background:rgba(51,224,138,.2);border-color:var(--go);}
+  #evlog{max-height:170px;overflow-y:auto;background:#07061a;border:1px solid var(--line);border-radius:10px;padding:8px;
+    font-family:ui-monospace,Menlo,Consolas,monospace;font-size:10.5px;line-height:1.55;color:#9ae6c0;white-space:pre-wrap;word-break:break-all;}
+
+  @media (max-width:560px){
+    .titles p{display:none;}
+    .res{font-size:12px;padding:4px 7px;}
+    .pill{min-width:88px;padding:5px 9px;}
+    .ctlrow .btn.ghost{max-width:96px;font-size:11px;}
+    .node{width:70px;height:88px;}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;}}
+</style>
+</head>
+<body>
+
+<!-- ===== SVG icon sprite: KHÔNG dùng ký hiệu tiền tệ thật ($, đ) ở bất kỳ đâu ===== -->
+<svg style="display:none" aria-hidden="true">
+  <symbol id="i-loot" viewBox="0 0 24 24"><!-- thỏi vàng -->
+    <path d="M4 15h16l2 4H2l2-4z" fill="#ffce4d"/><path d="M6 10h12l1.6 4H4.4L6 10z" fill="#ffdd7a"/>
+    <path d="M8.4 5h7.2l1.3 4H7.1l1.3-4z" fill="#ffe9a8"/>
+  </symbol>
+  <symbol id="i-pick" viewBox="0 0 24 24"><!-- bộ đồ nghề / lockpick -->
+    <path d="M14.5 2.5a5.5 5.5 0 1 0 3.4 9.8l3.3 3.3-1.4 1.4-1.2-1.2-1.4 1.4 1.2 1.2-1.4 1.4-3.4-3.4A5.5 5.5 0 0 0 14.5 2.5zm-1.9 3.1a1.8 1.8 0 1 1 0 3.6 1.8 1.8 0 0 1 0-3.6z" fill="#cfd6e6"/>
+    <path d="M3 19.5 9.5 13l1.6 1.6L4.6 21A1.1 1.1 0 0 1 3 19.5z" fill="#8a92a5"/>
+  </symbol>
+  <symbol id="i-coin" viewBox="0 0 24 24">
+    <circle cx="12" cy="12" r="9" fill="#ffce4d"/><circle cx="12" cy="12" r="6.2" fill="#f0a92c"/>
+    <path d="M12 7.4 13.4 11h3.8l-3 2.3 1.1 3.6L12 14.7 8.7 16.9l1.1-3.6-3-2.3h3.8L12 7.4z" fill="#ffe9a8"/>
+  </symbol>
+  <symbol id="i-ticket" viewBox="0 0 24 24">
+    <path d="M3 7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2a2.6 2.6 0 0 0 0 6v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2a2.6 2.6 0 0 0 0-6V7z" fill="#5fd8ff"/>
+    <path d="M14 5v14" stroke="#0b2a3a" stroke-width="1.6" stroke-dasharray="2 2"/>
+  </symbol>
+  <symbol id="i-shard" viewBox="0 0 24 24">
+    <path d="M12 2 20 9l-3.5 12h-9L4 9l8-7z" fill="#b17cff"/><path d="M12 2 20 9h-8V2z" fill="#d4b3ff"/>
+  </symbol>
+  <symbol id="i-mask" viewBox="0 0 24 24">
+    <path d="M3 7c3-1.6 6-2.4 9-2.4S18 5.4 21 7c0 6.5-3.6 12.4-9 12.4S3 13.5 3 7z" fill="#2a2a2a"/>
+    <ellipse cx="8.4" cy="10.2" rx="2.3" ry="1.7" fill="#fff"/><ellipse cx="15.6" cy="10.2" rx="2.3" ry="1.7" fill="#fff"/>
+  </symbol>
+</svg>
+
+<div id="app">
+  <header id="topbar">
+    <div class="logo"><svg><use href="#i-mask"/></svg></div>
+    <div class="titles">
+      <h1>CRASH OUT</h1>
+      <p>Safe&nbsp;Heist</p>
+    </div>
+    <div id="resbar">
+      <div class="res pick" id="resPick" title="Lockpick — hồi 1 cái / 15 phút, tối đa 5">
+        <svg><use href="#i-pick"/></svg><span id="pickVal">5</span><small id="pickTimer">/5</small>
+      </div>
+      <div class="res"><svg><use href="#i-coin"/></svg><span id="coinVal">250</span></div>
+      <div class="res"><svg><use href="#i-ticket"/></svg><span id="ticketVal">3</span></div>
+      <button class="iconbtn" id="soundBtn" title="Bật/tắt âm thanh">🔊</button>
+      <button class="iconbtn" id="qaBtn" title="QA / Debug panel">⚙</button>
+    </div>
+  </header>
+
+  <div id="screens">
+
+    <!-- ============ MAP ============ -->
+    <section class="screen on" id="scMap">
+      <div class="scroll">
+        <div class="card">
+          <div class="areahead">
+            <div class="areaicon" id="areaIcon">🏦</div>
+            <div style="min-width:0;flex:1">
+              <div class="nm" id="areaName">NGÂN HÀNG TRUNG TÂM</div>
+              <div class="sb" id="areaSub">Khu vực 1 / 5</div>
+            </div>
+          </div>
+          <div class="bar"><i id="areaBar" style="width:0%"></i></div>
+          <div class="barrow"><span id="areaProg">0 / 5.500 Loot</span><span id="areaNext">Đầy thanh → mở Sòng bạc</span></div>
+          <div id="track"></div>
+          <div class="btnrow">
+            <button class="btn gold" id="goBtn">VÀO PHI VỤ<span class="sub" id="goSub">Tốn 1 Lockpick</span></button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Phi vụ gần đây</h3>
+          <div class="feed" id="feed"></div>
+          <div class="muted" style="margin-top:8px">Feed bot + user khác — tái tạo lớp social của Aviator, chỉ hiển thị Rate, không có tiền.</div>
+        </div>
+
+        <div class="card">
+          <h3>Chuỗi phi vụ</h3>
+          <div class="kv"><span>Chuỗi hiện tại</span><b id="streakVal">0</b></div>
+          <div class="kv"><span>Bonus Loot đang có</span><b id="streakBonus">+0%</b></div>
+          <div class="kv"><span>Rate cao nhất đã thoát</span><b id="bestRate">1.00×</b></div>
+          <div class="muted" style="margin-top:6px">Bị bắt là mất chuỗi. Đây là lớp loss-aversion thay cho việc mất tiền.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ PLAY ============ -->
+    <section class="screen" id="scPlay">
+      <div id="stage">
+        <canvas id="game"></canvas>
+        <div id="hud">
+          <div class="pill">
+            <span class="label">Loot phi vụ</span>
+            <span class="value"><svg><use href="#i-loot"/></svg><span id="lootVal">0</span></span>
+            <div id="lockPill" style="display:none">🛡 Đã khoá <span id="lockRate">1.00×</span></div>
+          </div>
+          <div class="mult" id="rateWrap"><span id="rateVal">1.00×</span><span class="multLabel">Rate</span></div>
+          <div class="pill right"><span class="label">Két đã mở</span><span class="value" id="safeVal">0</span></div>
+        </div>
+        <div id="choiceBox">
+          <div class="t">🚨 KÉT BÁO ĐỘNG<br>Nhận ×1.5 Rate ngay, nhưng két kế tiếp nguy hiểm hơn +15%</div>
+          <div class="btnrow">
+            <button class="btn gold" id="alarmYes">NHẬN ×1.5</button>
+            <button class="btn ghost" id="alarmNo">BỎ QUA</button>
+          </div>
+        </div>
+        <div id="hint">Chuẩn bị…</div>
+      </div>
+      <div class="ctlrow">
+        <button class="btn go" id="escapeBtn">TẨU THOÁT<span class="sub" id="escapeSub">Giữ 0 Loot</span></button>
+        <button class="btn ghost" id="quitBtn">Bỏ phi vụ</button>
+      </div>
+    </section>
+
+    <!-- ============ CREW ============ -->
+    <section class="screen" id="scCrew">
+      <div class="scroll">
+        <div class="card">
+          <h3>Đồng bọn — mang theo 1 người mỗi phi vụ</h3>
+          <div class="grid2" id="crewGrid"></div>
+          <div class="muted" style="margin-top:9px">Mảnh Đồng bọn rơi từ Mystery Safe. Đây là chỗ cắm gacha nhẹ ở phase sau.</div>
+        </div>
+        <div class="card">
+          <h3>Bộ sưu tập</h3>
+          <div class="kv"><span>Mảnh Skin đang có</span><b id="skinShardVal">0</b></div>
+          <div class="muted">Skin theo khu vực và sự kiện: trang phục, mặt nạ, skin két và hầm — nền tảng IP tái sử dụng của Kgame.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ MINIGAME ============ -->
+    <section class="screen" id="scMini">
+      <div id="miniStage">
+        <canvas id="miniCanvas"></canvas>
+        <div id="miniTop">
+          <span>MINI GAME · CRASH CỔ ĐIỂN · NO BETTING</span>
+          <span id="miniTickets">Vé: 3</span>
+        </div>
+        <div id="miniHud">
+          <div id="miniRate">1.00×</div>
+          <div id="miniMsg">Dùng 1 Vé để vào. Thắng có thưởng, thua không mất gì.</div>
+        </div>
+      </div>
+      <div class="ctlrow">
+        <button class="btn gold" id="miniBtn">VÀO VÒNG<span class="sub">Tốn 1 Vé</span></button>
+        <button class="btn ghost" id="miniInfo">Vì sao có mode này?</button>
+      </div>
+    </section>
+
+    <!-- ============ SHOP ============ -->
+    <section class="screen" id="scShop">
+      <div class="scroll" id="shopList"></div>
+    </section>
+
+    <!-- ============ LEADERBOARD ============ -->
+    <section class="screen" id="scBoard">
+      <div class="scroll">
+        <div class="card">
+          <h3>Bảng xếp hạng</h3>
+          <div class="tabs">
+            <div class="tab on" data-lb="global">Global</div>
+            <div class="tab" data-lb="local">Local</div>
+            <div class="tab" data-lb="friend">Bạn bè</div>
+          </div>
+          <div id="lbList"></div>
+          <div class="muted" style="margin-top:9px">Tiêu chí: Rate cao nhất mà User từng <b>thoát thành công</b>. Run bị bắt không được tính — thưởng cho quyết định tốt, không khuyến khích liều lĩnh.</div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <nav id="nav">
+    <button class="nb on" data-go="scMap"><i>🗺</i>Bản đồ</button>
+    <button class="nb" data-go="scCrew"><i>🎭</i>Đồng bọn</button>
+    <button class="nb" data-go="scMini"><i>📈</i>Crash</button>
+    <button class="nb" data-go="scShop"><i>🛒</i>Shop</button>
+    <button class="nb" data-go="scBoard"><i>🏆</i>BXH</button>
+  </nav>
+</div>
+
+<!-- ===== Result overlay ===== -->
+<div class="ov" id="ovResult">
+  <div class="sheet">
+    <h2 id="rTitle">TẨU THOÁT!</h2>
+    <div class="sh" id="rSub">Phi vụ hoàn thành</div>
+    <div class="bigloot"><svg><use href="#i-loot"/></svg><span id="rLoot">0</span></div>
+    <div class="kv"><span>Rate khi thoát</span><b id="rRate">1.00×</b></div>
+    <div class="kv"><span>Két đã mở</span><b id="rSafes">0</b></div>
+    <div class="kv"><span>Bonus chuỗi</span><b id="rStreak">+0%</b></div>
+    <div class="kv"><span>Coins nhận được</span><b id="rCoins">0</b></div>
+    <div class="haul" id="rHaul"></div>
+    <div class="btnrow" style="margin-top:10px">
+      <button class="btn gold adbtn" id="rAdBtn">×2 LOOT</button>
+      <button class="btn ghost adbtn" id="rAdMyst" style="display:none">MỞ MYSTERY</button>
+    </div>
+    <div class="btnrow" style="margin-top:8px">
+      <button class="btn go" id="rNext">PHI VỤ TIẾP THEO</button>
+      <button class="btn ghost" id="rHome">Bản đồ</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Generic modal ===== -->
+<div class="ov" id="ovModal">
+  <div class="sheet">
+    <h2 id="mTitle">—</h2>
+    <div class="sh" id="mSub"></div>
+    <div class="muted" id="mBody" style="font-size:13px"></div>
+    <div class="btnrow" style="margin-top:12px"><button class="btn gold" id="mOk">OK</button></div>
+  </div>
+</div>
+
+<!-- ===== QA panel ===== -->
+<div class="ov" id="qa">
+  <div class="sheet">
+    <h2>QA / Debug</h2>
+    <div class="sh">Chỉ có trong bản demo — không đưa vào build store</div>
+    <div class="qarow">
+      <button id="qaFast">⏩ Regen Lockpick 15s</button>
+      <button id="qaPick">+5 Lockpick</button>
+      <button id="qaTicket">+10 Vé</button>
+      <button id="qaCoin">+5.000 Coins</button>
+    </div>
+    <div class="qarow">
+      <span style="font-size:11.5px;font-weight:800;color:var(--sub);align-self:center">Ép loại két kế tiếp:</span>
+      <select id="qaForce">
+        <option value="">— ngẫu nhiên —</option>
+        <option value="normal">Két thường</option>
+        <option value="gold">Két vàng</option>
+        <option value="mystery">Mystery Safe</option>
+        <option value="alarm">Két báo động</option>
+        <option value="saferoom">Phòng an toàn</option>
+        <option value="trap">Két bẫy (cảnh sát)</option>
+      </select>
+    </div>
+    <div class="qarow">
+      <button id="qaCrew">Mở khoá toàn bộ Đồng bọn</button>
+      <button id="qaArea">Mở khoá toàn bộ Khu vực</button>
+      <button id="qaDriver">Reset perk Tài xế</button>
+      <button id="qaReset">Reset toàn bộ</button>
+    </div>
+    <h3 style="margin:12px 0 6px;font-size:12px;letter-spacing:2px;color:var(--sub);text-transform:uppercase">Event log — draft dictionary cho GA4</h3>
+    <div id="evlog"></div>
+    <div class="btnrow" style="margin-top:10px">
+      <button class="btn ghost" id="qaCopy">Copy log</button>
+      <button class="btn gold" id="qaClose">Đóng</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+"use strict";
+/* =========================================================================
+   CRASH OUT — SAFE HEIST  ·  demo v3
+   Build lại từ index_2.html theo Concept Doc v1.0 (Kgame)
+
+   THAY ĐỔI LỚN SO VỚI BẢN CŨ
+   1. Bỏ hoàn toàn bet / balance / chip / quick-bet  ->  Lockpick cố định 1 cái/run
+   2. Bỏ mọi ký hiệu tiền tệ thật ($)               ->  icon thỏi vàng (Loot) / coin / vé
+   3. "CASH OUT"                                    ->  "TẨU THOÁT"
+   4. Rate liên tục                                 ->  nấc rời rạc theo từng két (~2.5s/beat)
+   5. Chỉ có 1 loại két                             ->  6 loại két theo bảng concept
+   6. Không có meta                                 ->  bản đồ khu vực, thanh tiến trình, đồng bọn,
+                                                        streak, feed bot, mini game crash cổ điển
+   ========================================================================= */
+
+/* =============== 1. CONFIG — toàn bộ số để design tune ở đây =============== */
+const CFG = {
+  /* --- Lockpick (thay cho tiền cược) --- */
+  LOCKPICK_MAX: 5,
+  LOCKPICK_REGEN: 15 * 60,      // giây — concept: 1 cái / 15 phút
+  LOCKPICK_COST: 1,             // cố định, KHÔNG có bet slider
+
+  /* --- Crash curve (đã rebalance cho nấc rời rạc) --- */
+  IMMUNE_BASE: 2,               // 2 két đầu an toàn tuyệt đối (Hacker -> 3)
+  CRASH_BASE: 0.07,             // p của két đầu tiên có rủi ro
+  CRASH_STEP: 0.035,            // +mỗi két sau đó
+  CRASH_CAP: 0.42,              // trần trước khi nhân riskMul của khu vực
+  ALARM_PENALTY: 0.15,          // két báo động: +15% cho ĐÚNG két kế tiếp
+  BOSS_RISK: 1.15,              // Boss Vault khó hơn
+
+  /* --- Bảng Rate chuẩn (nấc rời rạc, không random tuỳ tiện) --- */
+  STEP_TABLE: [0.15, 0.20, 0.30, 0.40, 0.55, 0.75, 1.00, 1.35, 1.80, 2.40, 3.20, 4.20, 5.60, 7.40],
+  STEP_GROWTH: 1.32,            // ngoài bảng thì nhân tiếp
+  DRIFT: 0.02,                  // rate tăng chậm theo thời gian giữa các két
+  DRIFT_SCALE: 0.010,
+
+  /* --- Tần suất loại két (concept doc) — chuẩn hoá trên phần KHÔNG crash --- */
+  TYPE_W: [['normal', 65], ['gold', 12], ['mystery', 8], ['alarm', 5], ['saferoom', 5]],
+  GOLD_TIER_UP: 1,              // két vàng dùng step cao hơn 1 bậc
+  ALARM_MULT: 1.5,
+  SAFEROOM_KEEP: 0.5,           // giữ 50% Loot nếu bị bắt sau đó
+
+  /* --- Telegraph: cho user CẢM GIÁC có kỹ năng, không phải thuần may rủi --- */
+  TELE_TRUE: 0.40,              // % két bẫy có dấu hiệu báo trước
+  TELE_FALSE: 0.12,             // % két an toàn cũng có dấu hiệu (nhiễu, giữ tension)
+  TELE_TRUE_INSIDER: 0.85,      // perk Người trong cuộc
+  TELE_FALSE_INSIDER: 0.05,
+
+  /* --- Streak --- */
+  STREAK_STEP: 0.05, STREAK_CAP: 0.50,
+
+  /* --- Nhịp 1 beat ~2.5s --- */
+  WALK_SPEED: 330, PICK_TIME: 1.05, REACT_TIME: 0.6,
+
+  /* --- Mini game crash cổ điển --- */
+  MINI_TICKET: 1, MINI_GROWTH: 0.14, MINI_COIN_PER_X: 20, MINI_FLOOR: 1.20,
+  MINI_OFFER_STREAK: 5,         // chơi liên tiếp 5 ván -> trigger offer
+  MINI_OFFER_RATE: 5,           // giữ >= 5x -> nhóm risk-taker
+};
+
+/* =============== 2. Dữ liệu khu vực & đồng bọn =============== */
+const AREAS = [
+  { name:'NGÂN HÀNG TRUNG TÂM', short:'Ngân hàng', icon:'🏦', missions:20, target:5500,   lootMul:1.0, riskMul:1.00,
+    banner:'★ NGÂN HÀNG TRUNG TÂM ★', pal:['#2a2150','#1d2450','#141a3c'], accent:'#ffce4d' },
+  { name:'SÒNG BẠC HOÀNG KIM',  short:'Sòng bạc',  icon:'🎰', missions:20, target:14000,  lootMul:1.8, riskMul:1.08,
+    banner:'♠ SÒNG BẠC HOÀNG KIM ♠', pal:['#3a1230','#2a0f38','#180a24'], accent:'#ff5f8a' },
+  { name:'BẢO TÀNG QUỐC GIA',   short:'Bảo tàng',  icon:'🏛', missions:22, target:30000,  lootMul:3.2, riskMul:1.16,
+    banner:'◆ BẢO TÀNG QUỐC GIA ◆', pal:['#123040','#0e2a3a','#0a1c28'], accent:'#5fd8ff' },
+  { name:'DU THUYỀN TRIỆU PHÚ', short:'Du thuyền', icon:'🛥', missions:24, target:60000,  lootMul:5.5, riskMul:1.24,
+    banner:'≋ DU THUYỀN TRIỆU PHÚ ≋', pal:['#0d3550','#0a2b45','#071c30'], accent:'#4fe0d0' },
+  { name:'KHO VÀNG QUỐC GIA',   short:'Kho vàng',  icon:'🥇', missions:26, target:120000, lootMul:9.0, riskMul:1.32,
+    banner:'✦ KHO VÀNG QUỐC GIA ✦', pal:['#3a2a10','#2a1e0c','#1a1206'], accent:'#ffce4d' },
+];
+
+const CREW = [
+  { id:'hacker',  name:'Hacker',            emoji:'💻', need:0,
+    perk:'3 két đầu miễn nhiễm thay vì 2.' },
+  { id:'driver',  name:'Tài xế',            emoji:'🚗', need:8,
+    perk:'1 lần/ngày tự động tẩu thoát khi gặp két bẫy, giữ nguyên Loot.' },
+  { id:'cracker', name:'Chuyên gia phá két', emoji:'🔓', need:12,
+    perk:'+10% Rate mỗi két mở được.' },
+  { id:'insider', name:'Người trong cuộc',   emoji:'🕵', need:16,
+    perk:'Hiện cảnh báo mờ ở két bẫy — giảm mạnh cảm giác thuần may rủi.' },
+];
+
+const BOT_NAMES = ['ShadowFox','Rui88','El Gato','NoobTeam_Vy','MrPhantom','Kayo','Zé Carlos','Aditya','Dmitri','Bella',
+  'GhostHand','TomCat','Linh_2k','Karim','Nova','SilentK','Bruno','Anya','JackDaw','Mika'];
+
+/* =============== 3. Utils =============== */
+const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+const lerp  = (a,b,t)=>a+(b-a)*t;
+const rand  = (a,b)=>a+Math.random()*(b-a);
+const pick  = a=>a[Math.floor(Math.random()*a.length)];
+const easeOut = t=>1-Math.pow(1-t,3);
+const easeOutBack = t=>{const c1=1.70158,c3=c1+1;return 1+c3*Math.pow(t-1,3)+c1*Math.pow(t-1,2);};
+const fmt = n=>Math.round(n).toLocaleString('vi-VN');
+const $  = id=>document.getElementById(id);
+function rr(c,x,y,w,h,r){r=Math.min(r,w/2,h/2);c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath();}
+function star(c,cx,cy,sp,o,i2){let rot=-Math.PI/2;c.beginPath();for(let i=0;i<sp;i++){c.lineTo(cx+Math.cos(rot)*o,cy+Math.sin(rot)*o);rot+=Math.PI/sp;c.lineTo(cx+Math.cos(rot)*i2,cy+Math.sin(rot)*i2);rot+=Math.PI/sp;}c.closePath();}
+
+/* =============== 4. State (in-memory, reset khi F5 — demo không lưu) =============== */
+const G = {
+  lockpick: CFG.LOCKPICK_MAX, regenT: 0, fastRegen: false,
+  coins: 250, tickets: 3, skinShards: 0,
+  areaIdx: 0, areaUnlocked: 1,
+  areaLoot: AREAS.map(()=>0),
+  missionIdx: AREAS.map(()=>0),
+  maxMission: AREAS.map(()=>0),
+  streak: 0, bestRate: 1,
+  crewFrag: { hacker:0, driver:0, cracker:0, insider:0 },
+  crewOwned: { hacker:true, driver:false, cracker:false, insider:false },
+  equipped: 'hacker',
+  driverUsed: false,
+  mini: { plays:0, chain:0, best:1, bought:false },
+  stats: { runs:0, escapes:0, busts:0 },
+  soundOn: true,
+  forceType: '',
+};
+
+/* =============== 5. Analytics — draft event dictionary cho GA4/Firebase ===============
+   Mọi event đều console.log + đẩy vào QA panel để đối chiếu khi setup Custom Dimensions. */
+const EVENTS = [];
+function track(name, params){
+  const row = { t:new Date().toISOString().slice(11,19), name, params: params||{} };
+  EVENTS.push(row);
+  if(EVENTS.length>300) EVENTS.shift();
+  console.log('[GA4]', row.name, row.params);
+  const box = $('evlog');
+  if(box && $('qa').classList.contains('on')) renderLog();
+}
+function renderLog(){
+  $('evlog').textContent = EVENTS.slice(-80).map(e=>`${e.t}  ${e.name}  ${JSON.stringify(e.params)}`).join('\n');
+  $('evlog').scrollTop = 999999;
+}
+
+/* =============== 6. Audio =============== */
+let audioCtx=null;
+function ac(){ if(!audioCtx){ try{ audioCtx=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ audioCtx=null; } } return audioCtx; }
+function tone(f,dur,type,vol,delay){
+  if(!G.soundOn) return; const a=ac(); if(!a) return;
+  const t=a.currentTime+(delay||0), o=a.createOscillator(), g=a.createGain();
+  o.type=type||'sine'; o.frequency.setValueAtTime(f,t);
+  g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(vol||0.16,t+0.012);
+  g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  o.connect(g); g.connect(a.destination); o.start(t); o.stop(t+dur+0.03);
+}
+const sfx = {
+  start:()=>{tone(320,.09,'square',.13,0);tone(480,.12,'square',.13,.09);},
+  click:()=>tone(rand(900,1300),.045,'square',.07,0),
+  open :()=>{tone(660,.07,'triangle',.15,0);tone(990,.1,'triangle',.13,.06);},
+  gold :()=>{[784,988,1175,1568].forEach((f,i)=>tone(f,.13,'triangle',.14,i*.055));},
+  myst :()=>{[523,784,1046].forEach((f,i)=>tone(f,.16,'sine',.15,i*.08));},
+  alarm:()=>{tone(880,.16,'square',.13,0);tone(660,.16,'square',.13,.18);tone(880,.16,'square',.13,.36);},
+  room :()=>{tone(392,.14,'sine',.14,0);tone(587,.2,'sine',.14,.1);},
+  cash :()=>{[523,659,784,1046,1318].forEach((f,i)=>tone(f,.15,'triangle',.15,i*.065));},
+  bust :()=>{tone(90,.35,'sawtooth',.2,0);tone(60,.4,'square',.16,0);tone(880,.16,'square',.12,.02);tone(660,.2,'square',.11,.14);},
+};
+
+/* =============== 7. Helpers về tiến trình =============== */
+const area    = ()=>AREAS[G.areaIdx];
+const missionNo = ()=>G.missionIdx[G.areaIdx];              // 0-index
+const isBoss  = m=>((m+1)%5===0);
+function missionLoot(a, m){ return Math.round((70 + m*10) * AREAS[a].lootMul * (isBoss(m)?2.5:1)); }
+function immuneCount(){ return CFG.IMMUNE_BASE + (G.equipped==='hacker'?1:0); }
+function streakMul(){ return 1 + Math.min(CFG.STREAK_CAP, G.streak*CFG.STREAK_STEP); }
+
+function toast(msg){
+  const t=$('toast'); t.textContent=msg; t.classList.add('on');
+  clearTimeout(toast._t); toast._t=setTimeout(()=>t.classList.remove('on'),1900);
+}
+function modal(title, sub, body){
+  $('mTitle').textContent=title; $('mSub').textContent=sub||''; $('mBody').innerHTML=body||'';
+  $('ovModal').classList.add('on');
+}
+
+/* =============== 8. HUD tài nguyên =============== */
+function syncRes(){
+  $('pickVal').textContent = G.lockpick;
+  if(G.lockpick>=CFG.LOCKPICK_MAX){ $('pickTimer').textContent = '/'+CFG.LOCKPICK_MAX; }
+  else {
+    const total = G.fastRegen?15:CFG.LOCKPICK_REGEN;
+    const left = Math.max(0, total-G.regenT);
+    const mm = String(Math.floor(left/60)).padStart(2,'0'), ss=String(Math.floor(left%60)).padStart(2,'0');
+    $('pickTimer').textContent = mm+':'+ss;
+  }
+  $('coinVal').textContent   = fmt(G.coins);
+  $('ticketVal').textContent = G.tickets;
+  $('miniTickets').textContent = 'Vé: '+G.tickets;
+  $('skinShardVal').textContent = G.skinShards;
+}
+function spendLockpick(){
+  if(G.lockpick<=0) return false;
+  const wasFull = G.lockpick>=CFG.LOCKPICK_MAX;
+  G.lockpick -= CFG.LOCKPICK_COST;
+  if(wasFull) G.regenT = 0;
+  syncRes(); return true;
+}
+function addLockpick(n){
+  G.lockpick = Math.min(CFG.LOCKPICK_MAX, G.lockpick+n);
+  syncRes();
+}
+setInterval(()=>{
+  if(G.lockpick < CFG.LOCKPICK_MAX){
+    G.regenT++;
+    const total = G.fastRegen?15:CFG.LOCKPICK_REGEN;
+    if(G.regenT>=total){ G.regenT=0; G.lockpick++; track('lockpick_regen',{value:G.lockpick}); }
+  } else G.regenT=0;
+  syncRes();
+}, 1000);
+
+/* =============== 9. Router =============== */
+let current='scMap';
+function go(id){
+  if(RUN.active && id!=='scPlay') return;             // đang chạy phi vụ thì không rời màn
+  document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on', s.id===id));
+  document.querySelectorAll('.nb').forEach(b=>b.classList.toggle('on', b.dataset.go===id));
+  $('nav').style.display = (id==='scPlay')?'none':'flex';
+  current=id;
+  if(id==='scMap')   renderMap();
+  if(id==='scCrew')  renderCrew();
+  if(id==='scShop')  renderShop();
+  if(id==='scBoard') renderBoard();
+  if(id==='scMini')  { resizeMini(); miniIdleDraw(); } else G.mini.chain=0;
+  track('screen_view',{screen:id});
+}
+document.querySelectorAll('.nb').forEach(b=>b.addEventListener('click',()=>go(b.dataset.go)));
+
+/* =============== 10. Màn bản đồ =============== */
+function renderMap(){
+  const A = area();
+  $('areaIcon').textContent = A.icon;
+  $('areaName').textContent = A.name;
+  $('areaSub').textContent  = 'Khu vực '+(G.areaIdx+1)+' / '+AREAS.length+' · '+A.missions+' phi vụ';
+  const p = clamp(G.areaLoot[G.areaIdx]/A.target,0,1);
+  $('areaBar').style.width = (p*100).toFixed(1)+'%';
+  $('areaProg').textContent = fmt(G.areaLoot[G.areaIdx])+' / '+fmt(A.target)+' Loot';
+  $('areaNext').textContent = (G.areaIdx+1<AREAS.length)
+    ? (p>=1 ? '✔ Đã mở '+AREAS[G.areaIdx+1].short : 'Đầy thanh → mở '+AREAS[G.areaIdx+1].short)
+    : 'Khu vực cuối cùng';
+
+  const tr=$('track'); tr.innerHTML='';
+  const cur = missionNo(), mx = G.maxMission[G.areaIdx];
+  for(let m=0;m<A.missions;m++){
+    const d=document.createElement('div');
+    const st = (m===cur)?'cur':(m<mx?'done':(m<=mx?'done':'lock'));
+    d.className='node '+st+(isBoss(m)?' boss':'');
+    d.innerHTML = '<span class="n">'+(m+1)+'</span>'
+      + '<span class="l">'+(isBoss(m)?'Boss Vault':'Phi vụ')+'</span>'
+      + '<span class="lt"><svg class="ico"><use href="#i-loot"/></svg>'+fmt(missionLoot(G.areaIdx,m))+'</span>'
+      + (isBoss(m)?'<span class="flag">🔥</span>':'');
+    if(m<=mx) d.addEventListener('click',()=>{ G.missionIdx[G.areaIdx]=m; renderMap(); });
+    tr.appendChild(d);
+  }
+  setTimeout(()=>{ const c=tr.querySelector('.cur'); if(c) tr.scrollLeft = Math.max(0,c.offsetLeft-90); },30);
+
+  const cost = CFG.LOCKPICK_COST;
+  $('goBtn').disabled = G.lockpick<cost;
+  $('goSub').textContent = G.lockpick<cost ? 'Hết Lockpick — chờ hồi hoặc xem quảng cáo' : ('Tốn '+cost+' Lockpick · Loot cơ bản '+fmt(missionLoot(G.areaIdx,cur)));
+  $('streakVal').textContent = G.streak;
+  $('streakBonus').textContent = '+'+Math.round((streakMul()-1)*100)+'%';
+  $('bestRate').textContent = G.bestRate.toFixed(2)+'×';
+  syncRes();
+}
+
+/* --- feed "Phi vụ gần đây" --- */
+const feedRows=[];
+function pushFeed(){
+  const ok = Math.random()<0.55;
+  const rate = ok ? rand(1.2,9.5) : rand(1.05,6.5);
+  feedRows.unshift({ who:pick(BOT_NAMES), ok, rate, tag: AREAS[Math.floor(rand(0,Math.min(G.areaUnlocked+1,AREAS.length)))].short });
+  if(feedRows.length>8) feedRows.pop();
+  drawFeed();
+}
+function drawFeed(){
+  const f=$('feed'); if(!f) return;
+  f.innerHTML = feedRows.map(r=>
+    '<div class="feedrow '+(r.ok?'ok':'bad')+'"><span class="who">'+(r.me?'👤 ':'')+r.who+'</span>'
+    +'<span class="tag">'+r.tag+'</span><span class="rt">'+(r.ok?'':'✖ ')+r.rate.toFixed(2)+'×</span></div>').join('');
+}
+for(let i=0;i<6;i++) pushFeed();
+setInterval(()=>{ if(!RUN.active) pushFeed(); }, 4200);
+
+/* =============== 11. Màn Đồng bọn =============== */
+function renderCrew(){
+  const g=$('crewGrid'); g.innerHTML='';
+  CREW.forEach(c=>{
+    const owned=G.crewOwned[c.id], frag=G.crewFrag[c.id];
+    const d=document.createElement('div');
+    d.className='crewcard'+(G.equipped===c.id?' eq':'')+(owned?'':' lockd');
+    d.innerHTML='<div class="ch"><div class="av">'+c.emoji+'</div><div><div class="nm">'+c.name+'</div>'
+      +'<div class="sb" style="font-size:10px;color:var(--sub);font-weight:800;letter-spacing:1px">'
+      +(owned?(G.equipped===c.id?'ĐANG MANG THEO':'ĐÃ CÓ'):'CHƯA MỞ KHOÁ')+'</div></div></div>'
+      +'<div class="pk">'+c.perk+'</div>'
+      +(owned?'':'<div class="frag"><svg class="ico"><use href="#i-shard"/></svg><div class="bar"><i style="width:'
+        +clamp(frag/c.need*100,0,100)+'%"></i></div>'+frag+'/'+c.need+'</div>');
+    if(owned) d.addEventListener('click',()=>{ G.equipped=c.id; track('crew_equip',{crew:c.id}); renderCrew(); });
+    g.appendChild(d);
+  });
+  $('skinShardVal').textContent = G.skinShards;
+}
+function addCrewShard(n){
+  const locked = CREW.filter(c=>!G.crewOwned[c.id]);
+  if(!locked.length){ G.skinShards+=n; return {type:'skin',n}; }
+  const c = locked[0];
+  G.crewFrag[c.id]+=n;
+  if(G.crewFrag[c.id]>=c.need){
+    G.crewOwned[c.id]=true;
+    track('crew_unlock',{crew:c.id});
+    setTimeout(()=>modal('🎭 MỞ KHOÁ ĐỒNG BỌN', c.name, '<b>'+c.perk+'</b><br><br>Vào màn Đồng bọn để mang theo trong phi vụ tiếp theo.'),400);
+  }
+  return {type:'crew',n,who:c.name};
+}
+
+/* =============== 12. Shop (mock, không có IAP thật) =============== */
+const SHOP = [
+  { hot:true, ic:'i-ticket', n:'GÓI ĐẶC BIỆT — TÂN THỦ', d:'2.000 Coins + 10 Vé Crash cổ điển', p:'0,99', act:()=>{G.coins+=2000;G.tickets+=10;G.mini.bought=true;} },
+  { ic:'i-coin', n:'Túi Coins nhỏ',  d:'1.200 Coins',        p:'0,99', act:()=>{G.coins+=1200;} },
+  { ic:'i-coin', n:'Két Coins',      d:'6.500 Coins (+8%)',  p:'4,99', act:()=>{G.coins+=6500;} },
+  { ic:'i-coin', n:'Xe tải Coins',   d:'15.000 Coins (+20%)',p:'9,99', act:()=>{G.coins+=15000;} },
+  { ic:'i-ticket', n:'5 Vé Crash',   d:'Vào mini game crash cổ điển', p:'1,99', act:()=>{G.tickets+=5;G.mini.bought=true;} },
+  { ic:'i-ticket', n:'20 Vé Crash',  d:'Kèm offer chuyển đổi',        p:'6,99', act:()=>{G.tickets+=20;G.mini.bought=true;} },
+  { ic:'i-pick', n:'Gói Lockpick',   d:'Đầy Lockpick ngay, bỏ qua thời gian chờ', p:'2,99', act:()=>{G.lockpick=CFG.LOCKPICK_MAX;} },
+];
+function renderShop(){
+  const l=$('shopList');
+  l.innerHTML = '<div class="card"><h3>Shop</h3>'
+    + SHOP.map((s,i)=>'<div class="shoprow'+(s.hot?' hot':'')+'"><div class="si"><svg><use href="#'+s.ic+'"/></svg></div>'
+      +'<div class="sm"><div class="sn">'+s.n+'</div><div class="sd">'+s.d+'</div></div>'
+      +'<button data-buy="'+i+'">'+s.p+' USD</button></div>').join('')
+    + '<div class="muted" style="margin-top:6px">Giá hiển thị là giá store (do platform quản lý). Trong game tuyệt đối không hiển thị ký hiệu tiền tệ thật — mọi tài nguyên đều dùng icon riêng.</div></div>';
+  l.querySelectorAll('[data-buy]').forEach(b=>b.addEventListener('click',()=>{
+    const s=SHOP[+b.dataset.buy];
+    s.act(); syncRes(); renderShop();
+    track('iap_purchase_mock',{sku:s.n, price_usd:s.p});
+    toast('[MOCK] Đã nhận: '+s.d);
+    if(s.n.indexOf('Vé')>=0 || s.hot) offerTrigger('whale_tiềm_năng — mua gói vé Crash');
+  }));
+}
+
+/* =============== 13. Leaderboard (mock) =============== */
+let lbTab='global';
+function renderBoard(){
+  const seed = lbTab==='global'?[42.1,31.6,24.8,19.2,15.5,12.9,10.4,8.7,7.2,6.1]
+             : lbTab==='local' ?[28.4,21.9,17.3,13.6,11.1,9.4,7.8,6.5,5.4,4.6]
+                               :[9.8,7.4,6.2,5.1,4.3,3.6,3.0,2.6,2.2,1.9];
+  const rows = seed.map((r,i)=>({who:BOT_NAMES[(i*3+ (lbTab==='local'?2:0))%BOT_NAMES.length], rate:r}));
+  rows.push({who:'BẠN', rate:G.bestRate, me:true});
+  rows.sort((a,b)=>b.rate-a.rate);
+  $('lbList').innerHTML = rows.map((r,i)=>
+    '<div class="lbrow'+(r.me?' me':'')+'"><span class="rk">'+(i+1)+'</span><span>'+(r.me?'👤 ':'')+r.who+'</span>'
+    +'<span class="rt">'+r.rate.toFixed(2)+'×</span></div>').join('')
+    + (lbTab==='friend'?'<div class="muted" style="margin-top:8px">Yêu cầu login Facebook. User đã login nhận thêm thưởng.</div>':'');
+}
+document.querySelectorAll('[data-lb]').forEach(t=>t.addEventListener('click',()=>{
+  lbTab=t.dataset.lb;
+  document.querySelectorAll('[data-lb]').forEach(x=>x.classList.toggle('on',x===t));
+  renderBoard();
+}));
+
+/* =============== 14. Offer trigger (funnel — mục tiêu chính của dự án) =============== */
+function offerTrigger(segment){
+  track('offer_trigger',{segment});
+  modal('🎯 OFFER TRIGGER','[MOCK] Phân khúc: '+segment,
+    'Ở bản thật, đây là điểm bắn offer chuyển đổi sang game crash thật hoặc giftcode tương đương gói đã mua.<br><br>'
+    +'<b>Các nhóm được định nghĩa trong concept:</b><br>'
+    +'· Lượt chơi crash cổ điển cao<br>· Bỏ tiền mua vé (whale tiềm năng)<br>· Thường xuyên giữ rate ≥ 5×<br>· Chơi liên tiếp 5 ván');
+}
+
+/* =============== 15. PHI VỤ — state =============== */
+const RUN = {
+  active:false, phase:'idle',  // idle|walk|pick|reveal|choice|crashed|escaped
+  rate:1, baseLoot:0, opened:0, idx:0,
+  immune:2, alarmPen:0, lockedRate:0,
+  haul:{ lockpick:0, ticket:0, crewShard:0, skinShard:0 },
+  lastGain:0, lastCoins:0, adUsed:false, savedByDriver:false,
+};
+
+/* =============== 16. PHI VỤ — canvas engine =============== */
+const DESIGN_W=1120, DESIGN_H=630;
+const GROUND_Y=470, THIEF_X=340;
+const SAFE_W=190, SAFE_H=240, SAFE_TOP=GROUND_Y-SAFE_H;
+const SAFE_SPACING=300, FIRST_SAFE_X=700, STOP_OFFSET=140;
+const THIEF_START_X = FIRST_SAFE_X - STOP_OFFSET - 270;
+const MAX_DOOR=1.98;
+
+const canvas=$('game'), ctx=canvas.getContext('2d');
+let thiefX=THIEF_START_X, cameraX=thiefX-THIEF_X;
+let walkPhase=0, bagPhase=0, time=0;
+let safes=new Map();
+let particles=[], floaters=[];
+let shakeMag=0, shakeX=0, shakeY=0, flash=0, flashCol='255,79,102';
+let phaseT=0, crashT=0, cashT=0, impactDone=false;
+let teleFlicker=0;
+
+const safeWorldX = i=>FIRST_SAFE_X + i*SAFE_SPACING;
+function getSafe(i){
+  let s=safes.get(i);
+  if(!s){ s={i,type:null,resolved:false,doorAngle:0,copP:0,pop:0,tele:false,revealed:false,glow:0}; safes.set(i,s); }
+  return s;
+}
+
+/* --- Crash curve + chọn loại két (roll TRƯỚC khi tới nơi để có thể telegraph) --- */
+function crashProb(i){
+  if(i < RUN.immune) return 0;
+  const A=area();
+  let p = CFG.CRASH_BASE + CFG.CRASH_STEP*(i-RUN.immune);
+  p = Math.min(p, CFG.CRASH_CAP);
+  p *= A.riskMul * (isBoss(missionNo())?CFG.BOSS_RISK:1);
+  p += RUN.alarmPen;
+  return clamp(p,0,0.92);
+}
+function rollType(i){
+  if(G.forceType){ const t=G.forceType; G.forceType=''; $('qaForce').value=''; return (i<RUN.immune && t==='trap')?'normal':t; }
+  if(Math.random() < crashProb(i)) return 'trap';
+  const total = CFG.TYPE_W.reduce((s,w)=>s+w[1],0);
+  let r=Math.random()*total;
+  for(const [t,w] of CFG.TYPE_W){ r-=w; if(r<=0) return t; }
+  return 'normal';
+}
+function stepAt(n){
+  const T=CFG.STEP_TABLE;
+  const base = n<T.length ? T[n] : T[T.length-1]*Math.pow(CFG.STEP_GROWTH, n-T.length+1);
+  return base * (G.equipped==='cracker'?1.10:1);
+}
+
+/* --- bắt đầu tiến tới két i --- */
+function approach(i){
+  const s=getSafe(i);
+  s.type = rollType(i);
+  const insider = G.equipped==='insider';
+  const pT = insider?CFG.TELE_TRUE_INSIDER:CFG.TELE_TRUE;
+  const pF = insider?CFG.TELE_FALSE_INSIDER:CFG.TELE_FALSE;
+  s.tele = s.type==='trap' ? Math.random()<pT : Math.random()<pF;
+  RUN.idx=i; RUN.phase='walk'; phaseT=0;
+}
+
+function startRun(){
+  if(!spendLockpick()){ toast('Hết Lockpick!'); return; }
+  const m=missionNo();
+  RUN.active=true; RUN.phase='walk'; RUN.rate=1; RUN.opened=0; RUN.idx=0;
+  RUN.baseLoot=missionLoot(G.areaIdx,m); RUN.mission=m;
+  RUN.immune=immuneCount(); RUN.alarmPen=0; RUN.lockedRate=0;
+  RUN.haul={lockpick:0,ticket:0,crewShard:0,skinShard:0};
+  RUN.adUsed=false; RUN.savedByDriver=false;
+  thiefX=THIEF_START_X; cameraX=thiefX-THIEF_X;
+  safes.clear(); particles=[]; floaters=[]; flash=0; shakeMag=0; crashT=0; cashT=0; impactDone=false;
+  G.stats.runs++;
+  $('lockPill').style.display='none';
+  $('choiceBox').classList.remove('on');
+  go('scPlay'); resize(); syncPlayHUD(); ac(); sfx.start();
+  approach(0);
+  track('run_start',{ area:G.areaIdx+1, mission:m+1, is_boss:isBoss(m), crew:G.equipped,
+    base_loot:RUN.baseLoot, lockpick_left:G.lockpick });
+}
+
+/* --- mở két: áp dụng kết quả --- */
+function openSafe(i){
+  const s=getSafe(i); s.resolved=true; s.revealed=true; s.pop=1;
+  const t=s.type;
+
+  if(t==='trap'){
+    // perk Tài xế: 1 lần/ngày tự cứu
+    if(G.equipped==='driver' && !G.driverUsed){
+      G.driverUsed=true; RUN.savedByDriver=true;
+      s.type='normal'; s.revealed=true;
+      spawnFloater('🚗 TÀI XẾ CỨU BỒ!','#4fe0d0');
+      sfx.room(); track('perk_driver_save',{safe_index:i, rate:+RUN.rate.toFixed(2)});
+      endRun(true, true);
+      return;
+    }
+    RUN.phase='crashed'; crashT=0; impactDone=false;
+    track('run_bust',{ area:G.areaIdx+1, mission:missionNo()+1, safe_index:i, rate:+RUN.rate.toFixed(2),
+      safes_opened:RUN.opened, saferoom:RUN.lockedRate>0, alarm_taken:RUN.alarmPen>0 });
+    return;
+  }
+
+  RUN.alarmPen = 0;                       // penalty chỉ áp cho ĐÚNG két kế tiếp
+  RUN.opened++;
+  const n=RUN.opened-1;
+
+  if(t==='normal'){
+    const add=stepAt(n); RUN.rate+=add;
+    spawnFloater('+'+add.toFixed(2)+'×','#33e08a'); spawnSparkle(12); sfx.open();
+  }
+  else if(t==='gold'){
+    const add=stepAt(n+CFG.GOLD_TIER_UP); RUN.rate+=add;
+    spawnFloater('KÉT VÀNG +'+add.toFixed(2)+'×','#ffce4d'); spawnCoins(22); sfx.gold();
+  }
+  else if(t==='mystery'){
+    const r=Math.random(); let item;
+    if(r<0.35){ item='crewShard'; RUN.haul.crewShard+=2; }
+    else if(r<0.65){ item='skinShard'; RUN.haul.skinShard+=2; }
+    else if(r<0.85){ item='ticket'; RUN.haul.ticket+=1; }
+    else { item='lockpick'; RUN.haul.lockpick+=1; }
+    const label={crewShard:'MẢNH ĐỒNG BỌN ×2',skinShard:'MẢNH SKIN ×2',ticket:'VÉ CRASH ×1',lockpick:'LOCKPICK ×1'}[item];
+    spawnFloater(label,'#b17cff'); spawnSparkle(16); sfx.myst();
+    track('mystery_open',{item, safe_index:i});
+  }
+  else if(t==='alarm'){
+    RUN.phase='choice'; phaseT=0;
+    $('choiceBox').classList.add('on'); sfx.alarm();
+    track('alarm_offer',{safe_index:i, rate:+RUN.rate.toFixed(2)});
+    return;
+  }
+  else if(t==='saferoom'){
+    RUN.lockedRate=RUN.rate;
+    $('lockPill').style.display='inline-flex';
+    $('lockRate').textContent=RUN.rate.toFixed(2)+'×';
+    spawnFloater('🛡 KHOÁ '+RUN.rate.toFixed(2)+'× — giữ 50% nếu bị bắt','#4fe0b0');
+    sfx.room(); track('saferoom_lock',{safe_index:i, locked_rate:+RUN.rate.toFixed(2)});
+  }
+
+  track('safe_opened',{ safe_index:i, safe_type:t, rate:+RUN.rate.toFixed(2),
+    loot:Math.round(RUN.baseLoot*RUN.rate), telegraph:s.tele });
+
+  RUN.phase='reveal'; phaseT=0;
+}
+
+/* --- lựa chọn két báo động --- */
+function alarmChoose(accept){
+  if(RUN.phase!=='choice') return;              // chặn click sớm / click lặp
+  $('choiceBox').classList.remove('on');
+  if(accept){
+    RUN.rate *= CFG.ALARM_MULT;
+    RUN.alarmPen = CFG.ALARM_PENALTY;
+    spawnFloater('×1.5 — nhưng két sau nguy hiểm hơn!','#ff4f66');
+    spawnCoins(14); flash=.7; flashCol='255,79,102';
+  } else {
+    spawnFloater('Bỏ qua — an toàn','#b7add9');
+  }
+  track('alarm_choice',{ accept, safe_index:RUN.idx, rate:+RUN.rate.toFixed(2) });
+  RUN.phase='reveal'; phaseT=0;
+}
+
+/* --- kết thúc phi vụ --- */
+function endRun(escaped, byDriver){
+  const m=missionNo(), A=area();
+  let gain=0;
+  if(escaped){
+    gain = Math.round(RUN.baseLoot * RUN.rate * streakMul());
+    RUN.phase='escaped'; cashT=0;
+    flash=1; flashCol='51,224,138';
+    spawnConfetti(90); spawnCoins(20); sfx.cash();
+    G.streak++; G.stats.escapes++;
+    if(RUN.rate>G.bestRate) G.bestRate=RUN.rate;
+    G.maxMission[G.areaIdx] = Math.min(A.missions-1, Math.max(G.maxMission[G.areaIdx], m+1));
+    G.missionIdx[G.areaIdx] = G.maxMission[G.areaIdx];
+    track('run_escape',{ area:G.areaIdx+1, mission:m+1, rate:+RUN.rate.toFixed(2), loot:gain,
+      safes_opened:RUN.opened, streak:G.streak, by_driver:!!byDriver });
+    if(RUN.rate>=CFG.MINI_OFFER_RATE) setTimeout(()=>offerTrigger('risk_taker — thoát ở rate ≥ '+CFG.MINI_OFFER_RATE+'×'),900);
+  } else {
+    // thua: chỉ mất kết quả của run, KHÔNG mất tài sản tích luỹ
+    if(RUN.lockedRate>0) gain = Math.round(RUN.baseLoot * RUN.lockedRate * CFG.SAFEROOM_KEEP);
+    G.streak=0; G.stats.busts++;
+  }
+  RUN.lastGain=gain;
+  RUN.lastCoins = escaped ? Math.round(RUN.baseLoot*0.2 + RUN.rate*10) : 0;
+  feedRows.unshift({who:'BẠN', me:true, ok:escaped, rate:RUN.rate, tag:A.short});
+  if(feedRows.length>8) feedRows.pop();
+  setTimeout(()=>showResult(escaped), escaped?1250:1500);
+}
+
+function applyGain(){
+  const A=area();
+  G.areaLoot[G.areaIdx]+=RUN.lastGain;
+  G.coins+=RUN.lastCoins;
+  G.skinShards+=RUN.haul.skinShard;
+  G.tickets+=RUN.haul.ticket;
+  addLockpick(RUN.haul.lockpick);
+  if(RUN.haul.crewShard) addCrewShard(RUN.haul.crewShard);
+  if(G.areaLoot[G.areaIdx]>=A.target && G.areaUnlocked<AREAS.length && G.areaIdx+1===G.areaUnlocked){
+    G.areaUnlocked++;
+    track('area_unlock',{area:G.areaUnlocked});
+    setTimeout(()=>{
+      modal('🔓 MỞ KHOÁ KHU VỰC MỚI', AREAS[G.areaUnlocked-1].name,
+        'Thanh tiến trình đã đầy. Bộ két, skin và độ khó mới đang chờ.');
+      G.areaIdx=G.areaUnlocked-1; renderMap();
+    },500);
+  }
+  syncRes();
+}
+
+function showResult(escaped){
+  applyGain();
+  const h=RUN.haul;
+  $('rTitle').textContent = escaped ? (RUN.savedByDriver?'TÀI XẾ CỨU BỒ!':'TẨU THOÁT!') : 'BỊ BẮT!';
+  $('rTitle').style.color = escaped?'var(--go)':'var(--alarm)';
+  $('rSub').textContent = escaped ? ('Phi vụ '+(RUN.mission+1)+' hoàn thành · '+area().short)
+    : (RUN.lockedRate>0 ? 'Phòng an toàn cứu được 50% Loot' : 'Mất toàn bộ Loot của phi vụ này — tài sản tích luỹ vẫn nguyên');
+  $('rLoot').textContent = fmt(RUN.lastGain);
+  $('rRate').textContent = RUN.rate.toFixed(2)+'×';
+  $('rSafes').textContent = RUN.opened;
+  $('rStreak').textContent = escaped ? '+'+Math.round((streakMul()-1)*100)+'%' : 'Mất chuỗi ✖';
+  $('rCoins').textContent = fmt(RUN.lastCoins);
+  const items=[];
+  if(h.crewShard) items.push(['i-shard','Mảnh Đồng bọn ×'+h.crewShard]);
+  if(h.skinShard) items.push(['i-shard','Mảnh Skin ×'+h.skinShard]);
+  if(h.ticket)    items.push(['i-ticket','Vé Crash ×'+h.ticket]);
+  if(h.lockpick)  items.push(['i-pick','Lockpick ×'+h.lockpick]);
+  $('rHaul').innerHTML = items.map(i=>'<div class="hitem"><svg><use href="#'+i[0]+'"/></svg>'+i[1]+'</div>').join('');
+  $('rAdBtn').style.display = (escaped && RUN.lastGain>0 && !RUN.adUsed) ? 'block':'none';
+  $('rAdMyst').style.display = (h.crewShard||h.skinShard||h.ticket||h.lockpick) ? 'block':'none';
+  $('rNext').textContent = escaped ? 'PHI VỤ TIẾP THEO' : 'THỬ LẠI';
+  $('ovResult').classList.add('on');
+  RUN.active=false;
+}
+
+/* --- tẩu thoát --- */
+function escape(){
+  if(!RUN.active) return;
+  if(RUN.phase!=='walk' && RUN.phase!=='pick' && RUN.phase!=='reveal' && RUN.phase!=='choice') return;
+  $('choiceBox').classList.remove('on');
+  endRun(true,false);
+}
+
+/* =============== 17. Particles =============== */
+function spawnFloater(text,col){ floaters.push({x:THIEF_X+rand(-6,6),y:GROUND_Y-150,vy:-46,life:1.35,text,col:col||'#33e08a'}); }
+function spawnSparkle(n){ for(let i=0;i<n;i++) particles.push({t:'sp',x:THIEF_X+40,y:GROUND_Y-120,vx:rand(-90,140),vy:rand(-160,-40),g:300,life:rand(.4,.8),ml:.8,rot:rand(0,6),vr:rand(-8,8),size:rand(4,9),c:['#ffce4d','#fff2b0','#fff'][i%3]}); }
+function spawnCoins(n){ for(let i=0;i<n;i++) particles.push({t:'co',x:THIEF_X+90,y:GROUND_Y-140,vx:rand(-260,140),vy:rand(-520,-220),g:1000,life:rand(1,1.6),ml:1.6,rot:rand(0,6),vr:rand(-10,10),size:rand(11,18),c:'#ffce4d'}); }
+function spawnStars(n){ for(let i=0;i<n;i++) particles.push({t:'st',x:THIEF_X+12,y:GROUND_Y-72,vx:rand(-220,220),vy:rand(-260,-40),g:520,life:rand(.5,.9),ml:.9,rot:rand(0,6),vr:rand(-12,12),size:rand(7,13),c:['#ffce4d','#ff9c2f','#fff'][i%3]}); }
+function spawnConfetti(n){ const cols=['#ffce4d','#33e08a','#ff9c2f','#ff5f8a','#54b3ff','#fff'];
+  for(let i=0;i<n;i++) particles.push({t:'cf',x:THIEF_X+rand(-40,40),y:GROUND_Y-120+rand(-20,20),vx:rand(-260,260),vy:rand(-460,-120),g:900,life:rand(1.1,1.9),ml:1.9,rot:rand(0,6),vr:rand(-14,14),size:rand(6,12),c:cols[i%cols.length]}); }
+function updateParticles(dt){
+  for(const p of particles){ p.vy+=p.g*dt; p.x+=p.vx*dt; p.y+=p.vy*dt; p.rot+=p.vr*dt; p.life-=dt; }
+  particles=particles.filter(p=>p.life>0 && p.y<DESIGN_H+80);
+}
+function updateFloaters(dt){ for(const f of floaters){ f.y+=f.vy*dt; f.vy*=.985; f.life-=dt*1.1; } floaters=floaters.filter(f=>f.life>0); }
+
+/* =============== 18. Update loop của phi vụ =============== */
+function update(dt){
+  time+=dt; teleFlicker+=dt;
+  if(RUN.active){
+    const p=RUN.phase;
+
+    if(p==='walk'){
+      const target = safeWorldX(RUN.idx)-STOP_OFFSET;
+      thiefX = Math.min(target, thiefX + CFG.WALK_SPEED*dt);
+      cameraX = thiefX-THIEF_X;
+      walkPhase += dt*8.4; bagPhase += dt*3.6;
+      RUN.rate += (CFG.DRIFT + (RUN.rate-1)*CFG.DRIFT_SCALE)*dt;
+      if(thiefX>=target-0.5){ RUN.phase='pick'; phaseT=0; }
+    }
+    else if(p==='pick'){
+      phaseT+=dt;
+      RUN.rate += (CFG.DRIFT + (RUN.rate-1)*CFG.DRIFT_SCALE)*dt*0.6;
+      if(Math.floor(phaseT*9)!==Math.floor((phaseT-dt)*9)) sfx.click();
+      if(phaseT>=CFG.PICK_TIME) openSafe(RUN.idx);
+    }
+    else if(p==='reveal'){
+      phaseT+=dt;
+      const s=getSafe(RUN.idx);
+      s.doorAngle = MAX_DOOR*easeOutBack(clamp(phaseT/0.32,0,1));
+      s.glow = clamp(1-phaseT/0.8,0,1);
+      if(phaseT>=CFG.REACT_TIME) approach(RUN.idx+1);
+    }
+    else if(p==='choice'){
+      const s=getSafe(RUN.idx);
+      s.doorAngle = MAX_DOOR*easeOutBack(clamp((phaseT+=dt)/0.32,0,1));
+    }
+    else if(p==='crashed'){
+      crashT += dt/1.2;
+      const s=getSafe(RUN.idx);
+      s.doorAngle = MAX_DOOR*easeOutBack(clamp(crashT/0.24,0,1));
+      s.copP = clamp(easeOutBack(clamp((crashT-0.16)/0.42,0,1)),0,1);
+      if(!impactDone && crashT>=0.2){
+        impactDone=true; shakeMag=28; flash=1; flashCol='255,79,102';
+        spawnStars(15); sfx.bust();
+        endRun(false,false);
+      }
+    }
+    else if(p==='escaped'){ cashT+=dt/1.1; bagPhase+=dt*4; }
+
+  } else bagPhase+=dt*1.6;
+  if(current==='scPlay') syncPlayHUD();
+
+  updateParticles(dt); updateFloaters(dt);
+  shakeMag*=Math.pow(0.0016,dt); if(shakeMag<0.4) shakeMag=0;
+  shakeX=rand(-1,1)*shakeMag; shakeY=rand(-1,1)*shakeMag;
+  flash=Math.max(0,flash-dt*2.2);
+}
+
+function syncPlayHUD(){
+  const loot=Math.round(RUN.baseLoot*RUN.rate);
+  $('rateVal').textContent = RUN.rate.toFixed(2)+'×';
+  $('lootVal').textContent = fmt(loot);
+  $('safeVal').textContent = RUN.opened;
+  const live = RUN.active && (RUN.phase==='walk'||RUN.phase==='pick'||RUN.phase==='reveal'||RUN.phase==='choice');
+  $('rateWrap').className = 'mult'+(live?' live':RUN.phase==='crashed'?' crash':RUN.phase==='escaped'?' win':'');
+  $('escapeBtn').disabled = !live;
+  $('escapeSub').textContent = 'Giữ '+fmt(Math.round(loot*streakMul()))+' Loot';
+  $('quitBtn').disabled = RUN.active && RUN.phase!=='crashed' && RUN.phase!=='escaped';
+
+  const s=getSafe(RUN.idx);
+  const h=$('hint');
+  if(!RUN.active){ h.className=''; h.textContent='—'; return; }
+  if(RUN.phase==='choice'){ h.className='warn'; h.textContent='🚨 Chọn: nhận ×1.5 hay bỏ qua?'; }
+  else if(s.tele && !s.resolved && (RUN.phase==='walk'||RUN.phase==='pick')){
+    h.className='warn';
+    h.textContent = G.equipped==='insider' ? '🕵 Người trong cuộc: két này CÓ VẤN ĐỀ' : '⚠ Nghe thấy tiếng bộ đàm phía trước…';
+  }
+  else if(RUN.phase==='pick'){ h.className=''; h.textContent='Đang phá khoá… tẩu thoát ngay hay đi tiếp?'; }
+  else if(RUN.phase==='crashed'){ h.className='warn'; h.textContent='Cảnh sát trong két!'; }
+  else if(RUN.phase==='escaped'){ h.className=''; h.textContent='Thoát gọn!'; }
+  else { h.className=''; h.textContent='Két '+(RUN.idx+1)+' phía trước'+(RUN.idx<RUN.immune?' · an toàn tuyệt đối':''); }
+}
+
+/* =============== 19. Vẽ scene =============== */
+function drawBackground(){
+  const A=area();
+  const g=ctx.createLinearGradient(0,0,0,GROUND_Y);
+  g.addColorStop(0,A.pal[0]); g.addColorStop(.55,A.pal[1]); g.addColorStop(1,A.pal[2]);
+  ctx.fillStyle=g; ctx.fillRect(0,0,DESIGN_W,GROUND_Y+2);
+  const px=(-cameraX*.25)%180;
+  ctx.strokeStyle='rgba(255,255,255,.04)'; ctx.lineWidth=2;
+  for(let x=px-180;x<DESIGN_W+180;x+=180){ ctx.beginPath(); ctx.moveTo(x,20); ctx.lineTo(x,GROUND_Y); ctx.stroke(); }
+  const bx=((-cameraX*.25)%780+780)%780;
+  ctx.save(); ctx.textAlign='center'; ctx.font='800 36px "Baloo 2",sans-serif'; ctx.fillStyle='rgba(255,255,255,.07)';
+  for(let x=bx-780;x<DESIGN_W+780;x+=780) ctx.fillText(A.banner,x,78);
+  ctx.restore();
+  const cg=ctx.createLinearGradient(0,0,0,90); cg.addColorStop(0,'rgba(0,0,0,.35)'); cg.addColorStop(1,'transparent');
+  ctx.fillStyle=cg; ctx.fillRect(0,0,DESIGN_W,90);
+}
+function drawFloor(){
+  const g=ctx.createLinearGradient(0,GROUND_Y,0,DESIGN_H);
+  g.addColorStop(0,'#2b2440'); g.addColorStop(1,'#100c20');
+  ctx.fillStyle=g; ctx.fillRect(0,GROUND_Y,DESIGN_W,DESIGN_H-GROUND_Y);
+  ctx.fillStyle='rgba(255,206,77,.10)'; ctx.fillRect(0,GROUND_Y-2,DESIGN_W,4);
+  ctx.strokeStyle='rgba(255,255,255,.05)'; ctx.lineWidth=2;
+  const off=((-cameraX)%120+120)%120;
+  for(let i=-6;i<DESIGN_W/120+6;i++){ const bx=off+i*120; ctx.beginPath(); ctx.moveTo(bx,GROUND_Y); ctx.lineTo(lerp(bx,DESIGN_W/2,.55),DESIGN_H); ctx.stroke(); }
+  for(let k=1;k<=3;k++){ const y=GROUND_Y+(DESIGN_H-GROUND_Y)*(k/4); ctx.globalAlpha=.5; ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(DESIGN_W,y); ctx.stroke(); ctx.globalAlpha=1; }
+}
+
+const TYPE_STYLE = {
+  normal:  {body:['#8b93a5','#5a6274','#363c4a'], plate:'#ffce4d', tag:'KÉT'},
+  gold:    {body:['#ffe6a0','#e0a83c','#8a6318'], plate:'#fff6d0', tag:'KÉT VÀNG'},
+  mystery: {body:['#c2a3ff','#7d55c7','#3f2a6b'], plate:'#e6d6ff', tag:'MYSTERY'},
+  alarm:   {body:['#ff9aa8','#d63a52','#6e1424'], plate:'#ffd7dd', tag:'BÁO ĐỘNG'},
+  saferoom:{body:['#a3f0d6','#3fbf95','#175843'], plate:'#d6fff0', tag:'PHÒNG AN TOÀN'},
+  trap:    {body:['#8b93a5','#5a6274','#363c4a'], plate:'#ffce4d', tag:'KÉT'},
+};
+function safeFrame(cx){ const left=cx-SAFE_W/2, top=SAFE_TOP, fi=16;
+  return {left,top,fx:left+fi,fy:top+fi,fw:SAFE_W-2*fi,fh:SAFE_H-2*fi}; }
+function drawBolt(x,y){ ctx.beginPath();ctx.arc(x,y,4.6,0,7);ctx.fillStyle='#cfd6e6';ctx.fill();ctx.beginPath();ctx.arc(x,y,2.2,0,7);ctx.fillStyle='#7c8497';ctx.fill(); }
+function drawLampGlow(cx,tint){
+  const gy=SAFE_TOP-6;
+  const grd=ctx.createRadialGradient(cx,gy,4,cx,gy,150);
+  grd.addColorStop(0,tint||'rgba(255,214,120,.26)'); grd.addColorStop(1,'transparent');
+  ctx.fillStyle=grd; ctx.beginPath(); ctx.moveTo(cx,gy); ctx.lineTo(cx-90,SAFE_TOP+150); ctx.lineTo(cx+90,SAFE_TOP+150); ctx.closePath(); ctx.fill();
+  ctx.fillStyle='#3a3350'; rr(ctx,cx-15,10,30,10,4); ctx.fill();
+  ctx.fillStyle='#ffe9a8'; ctx.beginPath(); ctx.arc(cx,24,6.5,0,7); ctx.fill();
+}
+function drawTelegraph(cx){
+  const on = Math.sin(teleFlicker*9)>0;
+  ctx.save();
+  ctx.globalAlpha = on?.95:.25;
+  ctx.fillStyle='#ff4f66'; ctx.beginPath(); ctx.arc(cx, SAFE_TOP-26, 9, 0, 7); ctx.fill();
+  ctx.globalAlpha = on?.35:.08;
+  const grd=ctx.createRadialGradient(cx,SAFE_TOP-26,4,cx,SAFE_TOP-26,120);
+  grd.addColorStop(0,'rgba(255,79,102,.55)'); grd.addColorStop(1,'transparent');
+  ctx.fillStyle=grd; ctx.fillRect(cx-120,SAFE_TOP-146,240,240);
+  ctx.globalAlpha=1;
+  ctx.fillStyle='#ff4f66'; ctx.font='800 15px "Baloo 2",sans-serif'; ctx.textAlign='center';
+  ctx.fillText('📻', cx+42, SAFE_TOP-20);
+  ctx.restore();
+}
+function drawCop(a,p){
+  if(p<=0) return;
+  const cx=a.ix+a.iw*.54, baseY=a.iy+a.ih, h=a.ih*.92, y=baseY-h*(.35+.6*p);
+  ctx.save();
+  const bw=a.iw*.5;
+  ctx.fillStyle='#2f5fb0'; rr(ctx,cx-bw*.5,y+h*.42,bw,h*.5,10); ctx.fill();
+  ctx.fillStyle='#254e94'; rr(ctx,cx-bw*.5,y+h*.42,bw*.5,h*.5,10); ctx.fill();
+  ctx.fillStyle='#ffce4d'; ctx.beginPath(); ctx.arc(cx-bw*.22,y+h*.56,4.5,0,7); ctx.fill();
+  const hr=a.iw*.16, hx=cx-2, hy=y+h*.3;
+  ctx.fillStyle='#f4c69a'; ctx.beginPath(); ctx.arc(hx,hy,hr,0,7); ctx.fill();
+  ctx.fillStyle='#222'; ctx.beginPath(); ctx.arc(hx-hr*.45,hy,2.4,0,7); ctx.fill(); ctx.beginPath(); ctx.arc(hx+hr*.15,hy,2.4,0,7); ctx.fill();
+  ctx.strokeStyle='#222'; ctx.lineWidth=2.2; ctx.beginPath(); ctx.moveTo(hx-hr*.8,hy-6); ctx.lineTo(hx-hr*.1,hy-3); ctx.moveTo(hx-hr*.05,hy-3); ctx.lineTo(hx+hr*.55,hy-6); ctx.stroke();
+  ctx.fillStyle='#1b3a72'; rr(ctx,hx-hr*1.05,hy-hr*1.05,hr*2.1,hr*.9,6); ctx.fill();
+  ctx.fillStyle='#12294f'; rr(ctx,hx-hr*1.5,hy-hr*.3,hr,hr*.35,4); ctx.fill();
+  ctx.fillStyle='#ffce4d'; ctx.beginPath(); ctx.arc(hx,hy-hr*.65,3.4,0,7); ctx.fill();
+  const sx=cx-bw*.35, sy=y+h*.5, gx=sx-a.iw*.34, gy=sy+2;
+  ctx.strokeStyle='#2f5fb0'; ctx.lineWidth=9; ctx.lineCap='round'; ctx.beginPath(); ctx.moveTo(sx,sy); ctx.lineTo(gx,gy); ctx.stroke();
+  ctx.fillStyle='#f4c69a'; ctx.beginPath(); ctx.arc(gx,gy,5,0,7); ctx.fill();
+  ctx.fillStyle='#3b3f48'; rr(ctx,gx-16,gy-4,16,8,2); ctx.fill();
+  ctx.fillStyle='#2a2d34'; rr(ctx,gx-4,gy+2,7,10,2); ctx.fill();
+  if(impactDone && crashT<.5){
+    const fa=1-(crashT-.2)/.3; ctx.save(); ctx.globalAlpha=clamp(fa,0,1);
+    ctx.fillStyle='#fff3b0'; star(ctx,gx-20,gy,6,14,6); ctx.fill();
+    ctx.fillStyle='#ffce4d'; star(ctx,gx-20,gy,6,9,4); ctx.fill(); ctx.restore();
+  }
+  ctx.restore();
+}
+function drawIngot(x,y,w){
+  const h=w*.42;
+  ctx.fillStyle='#ffce4d'; rr(ctx,x-w/2,y,w,h,3); ctx.fill();
+  ctx.fillStyle='#ffe9a8'; rr(ctx,x-w*.38,y-h*.55,w*.76,h*.6,3); ctx.fill();
+}
+function drawInterior(a,s){
+  const t=s.type;
+  if(t==='trap'){ drawCop(a,s.copP); return; }
+  if(!s.revealed) return;
+  const cx=a.ix+a.iw/2, by=a.iy+a.ih-14;
+  if(t==='gold'){
+    for(let r=0;r<3;r++) for(let i=0;i<3-r;i++)
+      drawIngot(cx-(2-r)*13+i*26, by-r*15, 26);
+    ctx.fillStyle='rgba(255,206,77,.20)'; ctx.beginPath(); ctx.arc(cx,by-20,a.iw*.55,0,7); ctx.fill();
+  } else if(t==='mystery'){
+    ctx.fillStyle='#7d55c7'; rr(ctx,cx-26,by-52,52,52,8); ctx.fill();
+    ctx.fillStyle='#e6d6ff'; ctx.font='800 34px "Baloo 2",sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('?',cx,by-26);
+  } else if(t==='alarm'){
+    const on=Math.sin(time*10)>0;
+    ctx.fillStyle=on?'#ff4f66':'#7e1a2b'; ctx.beginPath(); ctx.arc(cx,by-30,17,Math.PI,0); ctx.fill();
+    ctx.fillStyle='#3b3f48'; rr(ctx,cx-20,by-14,40,12,3); ctx.fill();
+  } else if(t==='saferoom'){
+    ctx.fillStyle='#3fbf95'; ctx.beginPath();
+    ctx.moveTo(cx,by-58); ctx.lineTo(cx+22,by-46); ctx.lineTo(cx+22,by-22);
+    ctx.quadraticCurveTo(cx,by-4,cx-22,by-22); ctx.lineTo(cx-22,by-46); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle='#d6fff0'; ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(cx-9,by-34); ctx.lineTo(cx-2,by-26); ctx.lineTo(cx+11,by-44); ctx.stroke();
+  } else {
+    drawIngot(cx-14,by-14,24); drawIngot(cx+16,by-14,24); drawIngot(cx+1,by-30,24);
+  }
+}
+function drawDoor(fr,angle,st,spin){
+  const margin=6, dw=fr.fw-2*margin, dh=fr.fh-2*margin;
+  const hx=fr.fx+margin, hy=fr.fy+fr.fh/2;
+  ctx.save(); ctx.translate(hx,hy); ctx.rotate(-angle);
+  const g=ctx.createLinearGradient(0,-dh/2,0,dh/2);
+  g.addColorStop(0,'#2a2d38'); g.addColorStop(.5,'#15171f'); g.addColorStop(1,'#0a0b10');
+  rr(ctx,0,-dh/2,dw,dh,10); ctx.fillStyle=g; ctx.fill();
+  ctx.lineWidth=3; ctx.strokeStyle='#000'; ctx.stroke();
+  ctx.lineWidth=2; ctx.strokeStyle='rgba(255,255,255,.06)'; rr(ctx,5,-dh/2+5,dw-10,dh-10,7); ctx.stroke();
+  const dcx=dw*.52, dr=Math.min(dw,dh)*.22;
+  ctx.fillStyle=st.plate; ctx.beginPath(); ctx.arc(dcx,0,dr,0,7); ctx.fill();
+  ctx.fillStyle='#8a92a5'; ctx.beginPath(); ctx.arc(dcx,0,dr*.62,0,7); ctx.fill();
+  ctx.strokeStyle='#5a6072'; ctx.lineWidth=2;
+  for(let i=0;i<8;i++){ const an=i/8*Math.PI*2;
+    ctx.beginPath(); ctx.moveTo(dcx+Math.cos(an)*dr*.72,Math.sin(an)*dr*.72); ctx.lineTo(dcx+Math.cos(an)*dr*.95,Math.sin(an)*dr*.95); ctx.stroke(); }
+  ctx.fillStyle='#4a4f5e'; ctx.beginPath(); ctx.arc(dcx,0,dr*.24,0,7); ctx.fill();
+  const dialSpin = (spin && RUN.phase==='pick' && angle<.05) ? Math.sin(phaseT*14)*1.4 : 0;
+  ctx.save(); ctx.translate(dcx,0); ctx.rotate(dialSpin);
+  ctx.strokeStyle='#eef1f8'; ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(0,-dr*.55); ctx.stroke(); ctx.restore();
+  ctx.fillStyle='#c9d0df'; rr(ctx,dw-14,-16,8,32,4); ctx.fill();
+  ctx.fillStyle='#9aa2b5'; ctx.beginPath(); ctx.arc(dw-10,0,4,0,7); ctx.fill();
+  ctx.fillStyle=angle>.1?'#ff5f6e':'#39d98a'; ctx.beginPath(); ctx.arc(14,-dh/2+14,4,0,7); ctx.fill();
+  ctx.restore();
+  if(angle>.15){
+    ctx.save(); ctx.globalAlpha=clamp(.45-phaseT,0,.4); ctx.strokeStyle='#fff'; ctx.lineWidth=3;
+    for(let k=0;k<3;k++){ ctx.beginPath(); ctx.arc(hx,hy,dw*.8-k*10,-angle-.35,-angle+.05); ctx.stroke(); }
+    ctx.restore();
+  }
+}
+function drawSafe(cx,s){
+  const st = TYPE_STYLE[s.revealed?s.type:'normal'] || TYPE_STYLE.normal;
+  drawLampGlow(cx, s.revealed&&s.type==='gold'?'rgba(255,206,77,.4)':null);
+  const fr=safeFrame(cx);
+  let bob=0; if(s.pop>0){ bob=Math.sin((1-s.pop)*10)*s.pop*3; s.pop=Math.max(0,s.pop-.03); }
+  ctx.save(); ctx.translate(0,bob);
+  const g=ctx.createLinearGradient(fr.left,fr.top,fr.left,fr.top+SAFE_H);
+  g.addColorStop(0,st.body[0]); g.addColorStop(.5,st.body[1]); g.addColorStop(1,st.body[2]);
+  rr(ctx,fr.left,fr.top,SAFE_W,SAFE_H,16); ctx.fillStyle=g; ctx.fill();
+  ctx.lineWidth=4; ctx.strokeStyle='#262b34'; ctx.stroke();
+  ctx.fillStyle='#3a4150'; rr(ctx,cx-48,fr.top+8,96,16,5); ctx.fill();
+  ctx.fillStyle=st.plate; ctx.font='800 10px "Baloo 2",sans-serif'; ctx.textAlign='center'; ctx.textBaseline='alphabetic';
+  ctx.fillText(s.revealed?st.tag:('KÉT '+String(s.i+1).padStart(2,'0')), cx, fr.top+20);
+  rr(ctx,fr.fx,fr.fy,fr.fw,fr.fh,12); ctx.fillStyle='#2a2f3a'; ctx.fill();
+  ctx.lineWidth=3; ctx.strokeStyle='#191d25'; ctx.stroke();
+  const dm=6, a={ix:fr.fx+dm,iy:fr.fy+dm,iw:fr.fw-2*dm,ih:fr.fh-2*dm};
+  ctx.save(); rr(ctx,a.ix,a.iy,a.iw,a.ih,8); ctx.clip();
+  const ig=ctx.createLinearGradient(a.ix,a.iy,a.ix,a.iy+a.ih); ig.addColorStop(0,'#20242e'); ig.addColorStop(1,'#0c0e14');
+  ctx.fillStyle=ig; ctx.fillRect(a.ix,a.iy,a.iw,a.ih);
+  drawInterior(a,s);
+  ctx.restore();
+  drawBolt(fr.left+13,fr.top+13); drawBolt(fr.left+SAFE_W-13,fr.top+13);
+  drawBolt(fr.left+13,fr.top+SAFE_H-13); drawBolt(fr.left+SAFE_W-13,fr.top+SAFE_H-13);
+  ctx.restore();
+  ctx.fillStyle='rgba(0,0,0,.28)'; ctx.beginPath(); ctx.ellipse(cx,GROUND_Y+8,SAFE_W*.5,12,0,0,7); ctx.fill();
+  // cửa: nếu chưa mở thì vẽ đóng tại chỗ; nếu đang mở thì vẽ sau (trước mặt nhân vật)
+  if(s.doorAngle<=.08){ ctx.save(); ctx.translate(0,bob); drawDoor(fr,0,st,s.i===RUN.idx); ctx.restore(); }
+  // telegraph
+  if(s.tele && !s.resolved) drawTelegraph(cx);
+}
+
+/* =============== 20. Vẽ nhân vật =============== */
+function drawEyes(mode){
+  ctx.fillStyle='#fff';
+  if(mode==='dizzy'){
+    ctx.strokeStyle='#fff'; ctx.lineWidth=2.4;
+    for(const ex of [-6,7]){ ctx.beginPath(); for(let a=0;a<9;a++){ const r=1+a*.7, an=a*.9; ctx.lineTo(ex+Math.cos(an)*r,-2+Math.sin(an)*r);} ctx.stroke(); }
+    return;
+  }
+  if(mode==='happy'){
+    ctx.strokeStyle='#fff'; ctx.lineWidth=2.6; ctx.lineCap='round';
+    ctx.beginPath(); ctx.arc(-6,-1,4,Math.PI*1.05,Math.PI*1.95); ctx.stroke();
+    ctx.beginPath(); ctx.arc(7,-1,4,Math.PI*1.05,Math.PI*1.95); ctx.stroke();
+    return;
+  }
+  ctx.beginPath(); ctx.ellipse(-6,-1,4.4,5.4,0,0,7); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(8,-1,4.4,5.4,0,0,7); ctx.fill();
+  ctx.fillStyle='#1a1a22';
+  ctx.beginPath(); ctx.arc(-4.5,-1,2.4,0,7); ctx.fill();
+  ctx.beginPath(); ctx.arc(9.5,-1,2.4,0,7); ctx.fill();
+  ctx.strokeStyle='#111'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(-11,-8); ctx.lineTo(-3,-6); ctx.moveTo(4,-6); ctx.lineTo(12,-8); ctx.stroke();
+}
+function drawThief(mode){
+  ctx.save(); ctx.translate(THIEF_X,GROUND_Y);
+  let eyeMode='focus', hop=0;
+  if(mode==='fall'){ const fp=RUN.phase==='crashed'?clamp((crashT-.2)/.55,0,1):1; ctx.rotate(-1.5*easeOutBack(fp)); eyeMode='dizzy'; }
+  else if(mode==='cheer'){ const cp=clamp(cashT,0,1); hop=-Math.abs(Math.sin(cp*Math.PI*2))*26*(1-cp*.4); eyeMode='happy'; }
+  ctx.translate(0,hop);
+  const bob = (mode==='walk')?-Math.abs(Math.sin(walkPhase))*3 : (mode==='pick'? Math.sin(time*12)*1.2 : Math.sin(bagPhase)*1.5);
+
+  /* --- túi Loot: KHÔNG dùng ký hiệu $, thay bằng thỏi vàng --- */
+  ctx.save();
+  const bagBob=Math.sin(bagPhase)*3;
+  ctx.translate(-24,-70+bob+bagBob); ctx.rotate(Math.sin(bagPhase*.8)*.05);
+  ctx.strokeStyle='#2a2a2a'; ctx.lineWidth=6; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(14,-14); ctx.lineTo(30,10); ctx.stroke();
+  const bg=ctx.createLinearGradient(-24,-24,10,24); bg.addColorStop(0,'#e8c98a'); bg.addColorStop(1,'#c99a4e');
+  ctx.fillStyle=bg; ctx.beginPath(); ctx.ellipse(-6,4,26,30,0,0,7); ctx.fill();
+  ctx.strokeStyle='#a67c34'; ctx.lineWidth=2; ctx.stroke();
+  ctx.fillStyle='#c99a4e'; rr(ctx,-14,-30,18,16,6); ctx.fill();
+  ctx.strokeStyle='#8a6524'; ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(-14,-20); ctx.lineTo(4,-20); ctx.stroke();
+  drawIngot(-6,4,26);
+  ctx.restore();
+
+  function leg(ph,back){
+    const sw=Math.sin(ph), footX=sw*15, lift=Math.max(0,Math.sin(ph))*8;
+    const hipX=back?-4:5, hipY=-46+bob;
+    ctx.strokeStyle=back?'#171717':'#242424'; ctx.lineWidth=11; ctx.lineCap='round';
+    ctx.beginPath(); ctx.moveTo(hipX,hipY); ctx.quadraticCurveTo(hipX+footX*.5,hipY+22,hipX+footX,-lift); ctx.stroke();
+    ctx.fillStyle='#0d0d0d'; rr(ctx,hipX+footX-4,-lift-6,20,10,5); ctx.fill();
+  }
+  if(mode==='fall'){
+    ctx.strokeStyle='#242424'; ctx.lineWidth=11; ctx.lineCap='round';
+    ctx.beginPath(); ctx.moveTo(3,-46); ctx.lineTo(20,-2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-3,-46); ctx.lineTo(14,-14); ctx.stroke();
+    ctx.fillStyle='#0d0d0d'; rr(ctx,16,-8,20,10,5); ctx.fill(); rr(ctx,10,-20,20,10,5); ctx.fill();
+  } else if(mode==='walk'){ leg(walkPhase+Math.PI,true); leg(walkPhase,false); }
+  else { leg(Math.PI*0.15,true); leg(-Math.PI*0.1,false); }
+
+  ctx.strokeStyle='#191919'; ctx.lineWidth=9; ctx.lineCap='round';
+  if(mode==='cheer'){ ctx.beginPath(); ctx.moveTo(-6,-80+bob); ctx.lineTo(-20,-104+bob); ctx.stroke(); }
+  else{ const asw=Math.sin(walkPhase+Math.PI)*8; ctx.beginPath(); ctx.moveTo(-6,-80+bob); ctx.lineTo(-12+asw*.4,-58+bob); ctx.stroke(); }
+
+  const tg=ctx.createLinearGradient(-18,-84,18,-46); tg.addColorStop(0,'#2c2c2c'); tg.addColorStop(1,'#131313');
+  ctx.fillStyle=tg; ctx.beginPath();
+  ctx.moveTo(-16,-46+bob);
+  ctx.quadraticCurveTo(-20,-70+bob,-10,-84+bob);
+  ctx.quadraticCurveTo(6,-92+bob,18,-82+bob);
+  ctx.quadraticCurveTo(22,-64+bob,18,-46+bob);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle='#0a0a0a'; rr(ctx,-16,-52+bob,34,7,3); ctx.fill();
+  ctx.fillStyle='#ffce4d'; rr(ctx,-2,-52+bob,7,7,2); ctx.fill();
+
+  /* tay trước — khi phá khoá thì vươn tới mặt két */
+  ctx.strokeStyle='#2a2a2a'; ctx.lineWidth=9; ctx.lineCap='round';
+  if(mode==='cheer'){
+    ctx.beginPath(); ctx.moveTo(10,-80+bob); ctx.lineTo(26,-106+bob); ctx.stroke();
+    ctx.fillStyle='#2a2a2a'; ctx.beginPath(); ctx.arc(26,-106+bob,5,0,7); ctx.fill();
+  } else if(mode==='pick'){
+    const j=Math.sin(time*16)*4;
+    ctx.beginPath(); ctx.moveTo(10,-80+bob); ctx.quadraticCurveTo(44,-84+bob,72,-92+bob+j); ctx.stroke();
+    ctx.fillStyle='#2a2a2a'; ctx.beginPath(); ctx.arc(72,-92+bob+j,5.5,0,7); ctx.fill();
+    ctx.strokeStyle='#cfd6e6'; ctx.lineWidth=2.6;
+    ctx.beginPath(); ctx.moveTo(72,-92+bob+j); ctx.lineTo(86,-96+bob+j); ctx.stroke();
+    if(Math.sin(time*16)>0.7){ ctx.fillStyle='#ffe9a8'; star(ctx,88,-96+bob+j,5,7,3); ctx.fill(); }
+  } else {
+    const asw=Math.sin(walkPhase)*7;
+    ctx.beginPath(); ctx.moveTo(10,-80+bob); ctx.quadraticCurveTo(24,-70+bob,26+asw*.3,-58+bob); ctx.stroke();
+    ctx.fillStyle='#2a2a2a'; ctx.beginPath(); ctx.arc(26+asw*.3,-58+bob,5,0,7); ctx.fill();
+  }
+
+  ctx.save();
+  const hx=8, hy=-102+bob, hr=20;
+  ctx.translate(hx,hy);
+  const mg=ctx.createLinearGradient(-hr,-hr,hr,hr); mg.addColorStop(0,'#242424'); mg.addColorStop(1,'#0f0f0f');
+  ctx.fillStyle=mg; ctx.beginPath(); ctx.arc(0,0,hr,0,7); ctx.fill();
+  ctx.fillStyle='#171717'; ctx.beginPath(); ctx.arc(0,-4,hr,Math.PI*1.08,Math.PI*1.92); ctx.fill();
+  ctx.fillStyle='#0c0c0c'; rr(ctx,-hr,-hr*.55,hr*2,7,3); ctx.fill();
+  ctx.fillStyle='#141414'; rr(ctx,-14,-8,30,15,7); ctx.fill();
+  drawEyes(eyeMode);
+  ctx.restore();
+  ctx.restore();
+
+  if(mode==='fall' && (RUN.phase!=='crashed'||crashT>.55)){
+    const t=time*4;
+    for(let i=0;i<3;i++){ const an=t+i*2.1, sx=THIEF_X-60+Math.cos(an)*24, sy=GROUND_Y-30+Math.sin(an)*10;
+      ctx.fillStyle='#ffce4d'; star(ctx,sx,sy,5,7,3); ctx.fill(); }
+  }
+}
+
+/* =============== 21. FX + render =============== */
+function drawParticles(){
+  for(const p of particles){
+    const alpha=clamp(p.life/p.ml,0,1); ctx.save(); ctx.globalAlpha=alpha; ctx.translate(p.x,p.y); ctx.rotate(p.rot);
+    if(p.t==='cf'){ ctx.fillStyle=p.c; ctx.fillRect(-p.size/2,-p.size*.35,p.size,p.size*.7); }
+    else if(p.t==='co'){ // đồng vàng — KHÔNG có ký hiệu $
+      ctx.fillStyle='#ffce4d'; ctx.beginPath();
+      ctx.ellipse(0,0,p.size*.5,p.size*.5*Math.abs(Math.cos(p.rot*1.5))+p.size*.15,0,0,7); ctx.fill();
+      ctx.strokeStyle='#c98b1e'; ctx.lineWidth=2; ctx.stroke();
+      ctx.fillStyle='#ffe9a8'; star(ctx,0,0,5,p.size*.28,p.size*.13); ctx.fill();
+    }
+    else if(p.t==='st'){ ctx.fillStyle=p.c; star(ctx,0,0,5,p.size,p.size*.45); ctx.fill(); }
+    else { ctx.fillStyle=p.c; star(ctx,0,0,4,p.size,p.size*.4); ctx.fill(); }
+    ctx.restore();
+  }
+}
+function drawFloaters(){
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  for(const f of floaters){
+    ctx.save(); ctx.globalAlpha=clamp(f.life,0,1);
+    ctx.font='800 27px "Baloo 2",sans-serif';
+    ctx.lineWidth=6; ctx.strokeStyle='rgba(0,0,0,.55)'; ctx.strokeText(f.text,f.x,f.y);
+    ctx.fillStyle=f.col; ctx.fillText(f.text,f.x,f.y);
+    ctx.restore();
+  }
+}
+function drawStamp(text,sub,col){
+  ctx.save(); ctx.translate(DESIGN_W/2,GROUND_Y-150);
+  let sc=1;
+  if(RUN.phase==='crashed'){ const tt=clamp((crashT-.35)/.2,0,1); if(tt<=0){ ctx.restore(); return; } sc=lerp(1.5,1,easeOut(tt)); ctx.globalAlpha=tt; }
+  if(RUN.phase==='escaped'){ const tt=clamp(cashT/.25,0,1); sc=lerp(.4,1,easeOutBack(tt)); }
+  ctx.rotate(-.06); ctx.scale(sc,sc); ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.font='800 68px "Baloo 2",sans-serif';
+  ctx.lineWidth=12; ctx.strokeStyle='rgba(0,0,0,.5)'; ctx.strokeText(text,0,0);
+  ctx.fillStyle=col; ctx.fillText(text,0,0);
+  if(sub){ ctx.font='800 26px "Baloo 2",sans-serif'; ctx.lineWidth=7; ctx.strokeStyle='rgba(0,0,0,.5)'; ctx.strokeText(sub,0,48); ctx.fillStyle='#fff'; ctx.fillText(sub,0,48); }
+  ctx.restore();
+}
+function drawComic(){
+  if(RUN.phase==='crashed' && impactDone && crashT<.5){
+    const a=1-(crashT-.2)/.3; ctx.save(); ctx.globalAlpha=clamp(a,0,1);
+    ctx.translate(THIEF_X+70,GROUND_Y-150); ctx.rotate(.12);
+    const sc=lerp(1.3,1,clamp((crashT-.2)/.15,0,1)); ctx.scale(sc,sc);
+    ctx.fillStyle='#ffce4d'; star(ctx,0,0,12,58,32); ctx.fill();
+    ctx.strokeStyle='#c9203c'; ctx.lineWidth=4; ctx.stroke();
+    ctx.fillStyle='#c9203c'; ctx.font='800 30px "Baloo 2",sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('TÓM!',0,0); ctx.restore();
+  }
+}
+
+let dpr=1,cssW=0,cssH=0,scale=1,offX=0,offY=0;
+function resize(){
+  const r=canvas.getBoundingClientRect(); dpr=Math.min(window.devicePixelRatio||1,2);
+  cssW=r.width||1; cssH=r.height||1;
+  canvas.width=Math.round(cssW*dpr); canvas.height=Math.round(cssH*dpr);
+  scale=Math.min(cssW/DESIGN_W,cssH/DESIGN_H);
+  offX=(cssW-DESIGN_W*scale)/2; offY=(cssH-DESIGN_H*scale)/2;
+}
+window.addEventListener('resize',()=>{ resize(); resizeMini(); });
+
+function render(){
+  if(current!=='scPlay') return;
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.fillStyle='#0b0a1f'; ctx.fillRect(0,0,cssW,cssH);
+  ctx.save();
+  ctx.translate(offX+shakeX,offY+shakeY); ctx.scale(scale,scale);
+  ctx.beginPath(); ctx.rect(0,0,DESIGN_W,DESIGN_H); ctx.clip();
+  drawBackground(); drawFloor();
+  const iMin=Math.max(0,Math.floor((cameraX-140-FIRST_SAFE_X)/SAFE_SPACING));
+  const iMax=Math.ceil((cameraX+DESIGN_W+140-FIRST_SAFE_X)/SAFE_SPACING);
+  for(let i=iMin;i<=iMax;i++) drawSafe(safeWorldX(i)-cameraX,getSafe(i));
+  const mode = RUN.phase==='walk'?'walk' : RUN.phase==='pick'?'pick'
+             : RUN.phase==='crashed'?'fall' : RUN.phase==='escaped'?'cheer':'idle';
+  drawThief(mode);
+  // cửa đang mở vẽ TRƯỚC mặt nhân vật
+  for(let i=iMin;i<=iMax;i++){ const s=safes.get(i); if(s&&s.doorAngle>.08)
+    drawDoor(safeFrame(safeWorldX(i)-cameraX), s.doorAngle, TYPE_STYLE[s.revealed?s.type:'normal']||TYPE_STYLE.normal); }
+  drawFloaters(); drawParticles(); drawComic();
+  if(RUN.phase==='crashed') drawStamp('BỊ BẮT!', RUN.lockedRate>0?'Giữ 50% nhờ Phòng an toàn':'Mất Loot của phi vụ','#ff4f66');
+  else if(RUN.phase==='escaped') drawStamp('TẨU THOÁT!','+'+fmt(RUN.lastGain)+' LOOT','#33e08a');
+  ctx.restore();
+  if(flash>0){ ctx.fillStyle='rgba('+flashCol+','+(flash*.4)+')'; ctx.fillRect(0,0,cssW,cssH); }
+}
+
+/* =============== 22. MINI GAME — Crash cổ điển (no betting) =============== */
+const mCv=$('miniCanvas'), mCtx=mCv.getContext('2d');
+const MINI = { active:false, t:0, rate:1, crashAt:2, phase:'idle', pts:[], endT:0 };
+let mW=0,mH=0,mDpr=1;
+function resizeMini(){
+  const r=mCv.getBoundingClientRect(); mDpr=Math.min(window.devicePixelRatio||1,2);
+  mW=r.width||1; mH=r.height||1; mCv.width=Math.round(mW*mDpr); mCv.height=Math.round(mH*mDpr);
+}
+function miniStart(){
+  if(MINI.active) return;
+  if(G.tickets<CFG.MINI_TICKET){ toast('Hết Vé — nhận từ Mystery Safe hoặc Shop'); return; }
+  G.tickets-=CFG.MINI_TICKET; syncRes();
+  MINI.active=true; MINI.t=0; MINI.rate=1; MINI.phase='live'; MINI.pts=[]; MINI.endT=0;
+  // phân phối crash chuẩn của thể loại — giữ đúng "cảm giác" để phục vụ mục tiêu funnel
+  MINI.crashAt = Math.min(50, Math.max(CFG.MINI_FLOOR, 0.97/(1-Math.random())));
+  G.mini.plays++; G.mini.chain++;
+  $('miniBtn').disabled=true;
+  $('miniRate').className='live';
+  $('miniMsg').textContent='Bấm TẨU THOÁT trước khi sập!';
+  $('miniBtn').innerHTML='TẨU THOÁT<span class="sub">Không mất gì nếu thua</span>';
+  $('miniBtn').className='btn go'; $('miniBtn').disabled=false;
+  ac(); sfx.start();
+  track('minigame_start',{ tickets_left:G.tickets, play_count:G.mini.plays });
+}
+function miniEscape(){
+  if(!MINI.active||MINI.phase!=='live') return;
+  MINI.phase='win'; MINI.active=false; MINI.endT=0;
+  const coins=Math.round(CFG.MINI_COIN_PER_X*MINI.rate);
+  G.coins+=coins; if(MINI.rate>G.mini.best) G.mini.best=MINI.rate;
+  if(MINI.rate>G.bestRate) G.bestRate=MINI.rate;
+  syncRes(); sfx.cash();
+  $('miniRate').className='win';
+  $('miniMsg').textContent='Thoát ở '+MINI.rate.toFixed(2)+'× · +'+fmt(coins)+' Coins';
+  resetMiniBtn();
+  track('minigame_escape',{ rate:+MINI.rate.toFixed(2), coins });
+  checkMiniOffer();
+}
+function miniBust(){
+  MINI.phase='bust'; MINI.active=false; MINI.endT=0;
+  sfx.bust();
+  $('miniRate').className='bad';
+  $('miniMsg').textContent='Sập ở '+MINI.crashAt.toFixed(2)+'× — bạn không mất gì cả.';
+  resetMiniBtn();
+  track('minigame_bust',{ rate:+MINI.crashAt.toFixed(2) });
+  checkMiniOffer();
+}
+function resetMiniBtn(){
+  $('miniBtn').className='btn gold';
+  $('miniBtn').innerHTML='VÀO VÒNG<span class="sub">Tốn 1 Vé</span>';
+  $('miniBtn').disabled=false;
+}
+function checkMiniOffer(){
+  if(G.mini.chain>=CFG.MINI_OFFER_STREAK){ G.mini.chain=0; setTimeout(()=>offerTrigger('chơi liên tiếp '+CFG.MINI_OFFER_STREAK+' ván crash'),800); return; }
+  if(G.mini.best>=CFG.MINI_OFFER_RATE && !checkMiniOffer._r){ checkMiniOffer._r=true; setTimeout(()=>offerTrigger('risk_taker — giữ rate ≥ '+CFG.MINI_OFFER_RATE+'×'),800); }
+}
+function miniUpdate(dt){
+  if(MINI.phase==='live'){
+    MINI.t+=dt;
+    MINI.rate=Math.exp(CFG.MINI_GROWTH*MINI.t);
+    if(MINI.rate>=MINI.crashAt){ MINI.rate=MINI.crashAt; miniBust(); }
+    MINI.pts.push({t:MINI.t,r:MINI.rate});
+    if(MINI.pts.length>1200) MINI.pts.shift();
+    $('miniRate').textContent=MINI.rate.toFixed(2)+'×';
+  } else if(MINI.phase!=='idle'){ MINI.endT+=dt; }
+}
+function miniDraw(){
+  if(current!=='scMini') return;
+  mCtx.setTransform(mDpr,0,0,mDpr,0,0);
+  mCtx.clearRect(0,0,mW,mH);
+  const pad=26, w=mW-pad*2, h=mH-pad*2-40;
+  mCtx.strokeStyle='rgba(255,255,255,.06)'; mCtx.lineWidth=1;
+  for(let i=0;i<=4;i++){ const y=pad+20+h*(i/4); mCtx.beginPath(); mCtx.moveTo(pad,y); mCtx.lineTo(pad+w,y); mCtx.stroke(); }
+  if(!MINI.pts.length) return;
+  const maxT=Math.max(6,MINI.pts[MINI.pts.length-1].t*1.05);
+  const maxR=Math.max(2,MINI.rate*1.12);
+  const X=t=>pad+w*(t/maxT), Y=r=>pad+20+h*(1-(r-1)/(maxR-1));
+  mCtx.beginPath(); mCtx.moveTo(X(0),Y(1));
+  for(const p of MINI.pts) mCtx.lineTo(X(p.t),Y(p.r));
+  mCtx.lineTo(X(MINI.pts[MINI.pts.length-1].t),Y(1)); mCtx.closePath();
+  const g=mCtx.createLinearGradient(0,pad,0,pad+20+h);
+  const col = MINI.phase==='bust'?'255,79,102':MINI.phase==='win'?'51,224,138':'255,206,77';
+  g.addColorStop(0,'rgba('+col+',.35)'); g.addColorStop(1,'rgba('+col+',0)');
+  mCtx.fillStyle=g; mCtx.fill();
+  mCtx.beginPath(); mCtx.moveTo(X(0),Y(1));
+  for(const p of MINI.pts) mCtx.lineTo(X(p.t),Y(p.r));
+  mCtx.strokeStyle='rgb('+col+')'; mCtx.lineWidth=4; mCtx.lineJoin='round'; mCtx.stroke();
+  const last=MINI.pts[MINI.pts.length-1];
+  mCtx.fillStyle='rgb('+col+')'; mCtx.beginPath(); mCtx.arc(X(last.t),Y(last.r),7,0,7); mCtx.fill();
+  if(MINI.phase==='live'){
+    mCtx.save(); mCtx.translate(X(last.t),Y(last.r));
+    mCtx.fillStyle='#fff'; mCtx.font='800 18px "Baloo 2",sans-serif'; mCtx.textAlign='left';
+    mCtx.fillText('🏃',10,-8); mCtx.restore();
+  }
+}
+function miniIdleDraw(){
+  $('miniRate').textContent = MINI.phase==='idle'?'1.00×':MINI.rate.toFixed(2)+'×';
+  if(MINI.phase==='idle'){ $('miniRate').className=''; $('miniMsg').textContent='Dùng 1 Vé để vào. Thắng có thưởng, thua không mất gì.'; }
+}
+
+/* =============== 23. Loop chung =============== */
+let last=performance.now();
+function frame(now){
+  const dt=Math.min(.05,(now-last)/1000); last=now;
+  update(dt); render();
+  miniUpdate(dt); miniDraw();
+  requestAnimationFrame(frame);
+}
+
+/* =============== 24. Input =============== */
+$('goBtn').addEventListener('click',startRun);
+$('escapeBtn').addEventListener('click',escape);
+$('quitBtn').addEventListener('click',()=>{ RUN.active=false; RUN.phase='idle'; go('scMap'); });
+$('alarmYes').addEventListener('click',()=>alarmChoose(true));
+$('alarmNo').addEventListener('click',()=>alarmChoose(false));
+$('soundBtn').addEventListener('click',()=>{ G.soundOn=!G.soundOn; $('soundBtn').textContent=G.soundOn?'🔊':'🔇'; if(G.soundOn) ac(); });
+$('resPick').addEventListener('click',()=>{
+  if(G.lockpick>=CFG.LOCKPICK_MAX){ toast('Lockpick đã đầy'); return; }
+  track('ad_watch',{placement:'lockpick_refill'});
+  addLockpick(2); toast('[MOCK] Xem quảng cáo → +2 Lockpick'); renderMap();
+});
+
+$('rNext').addEventListener('click',()=>{ $('ovResult').classList.remove('on'); if(G.lockpick>0) startRun(); else { go('scMap'); toast('Hết Lockpick — chờ hồi hoặc xem quảng cáo'); } });
+$('rHome').addEventListener('click',()=>{ $('ovResult').classList.remove('on'); go('scMap'); });
+$('rAdBtn').addEventListener('click',()=>{
+  if(RUN.adUsed) return; RUN.adUsed=true;
+  G.areaLoot[G.areaIdx]+=RUN.lastGain; RUN.lastGain*=2;
+  $('rLoot').textContent=fmt(RUN.lastGain); $('rAdBtn').style.display='none';
+  track('ad_watch',{placement:'double_loot', value:RUN.lastGain});
+  toast('[MOCK] Xem quảng cáo → ×2 Loot'); syncRes();
+});
+$('rAdMyst').addEventListener('click',()=>{
+  $('rAdMyst').style.display='none';
+  const r=Math.random();
+  if(r<.4){ G.skinShards+=3; toast('[MOCK] Mystery Safe → Mảnh Skin ×3'); }
+  else if(r<.75){ addCrewShard(3); toast('[MOCK] Mystery Safe → Mảnh Đồng bọn ×3'); }
+  else { G.tickets+=2; toast('[MOCK] Mystery Safe → Vé Crash ×2'); }
+  track('ad_watch',{placement:'mystery_safe'}); syncRes();
+});
+$('mOk').addEventListener('click',()=>{ $('ovModal').classList.remove('on'); if(current==='scMap') renderMap(); });
+$('miniBtn').addEventListener('click',()=>{ MINI.active?miniEscape():miniStart(); });
+$('miniInfo').addEventListener('click',()=>modal('Vì sao có mode này?','Mục tiêu funnel',
+  'Mục tiêu cao nhất của dự án là đưa user sang các game crash thật. Mode này cho user trải nghiệm crash chuẩn — <b>vào bằng Vé, thắng có thưởng, thua không mất gì</b> — để đo hành vi và chọn nhóm offer chuyển đổi.<br><br>Vẫn giữ đủ nguyên tắc compliance: không có bảng lịch sử rate, không thoát tự động, không chơi 2 lượt song song.'));
+
+window.addEventListener('keydown',e=>{
+  if(e.code==='Space'||e.code==='Enter'){
+    e.preventDefault();
+    if(current==='scPlay'){ RUN.active?escape():null; }
+    else if(current==='scMini'){ MINI.active?miniEscape():miniStart(); }
+    else if(current==='scMap'&&!$('ovResult').classList.contains('on')) startRun();
+  }
+});
+
+/* =============== 25. QA panel =============== */
+$('qaBtn').addEventListener('click',()=>{ $('qa').classList.add('on'); renderLog(); });
+$('qaClose').addEventListener('click',()=>$('qa').classList.remove('on'));
+$('qaFast').addEventListener('click',e=>{ G.fastRegen=!G.fastRegen; e.target.classList.toggle('on',G.fastRegen); G.regenT=0; toast('Regen Lockpick: '+(G.fastRegen?'15 giây':'15 phút')); });
+$('qaPick').addEventListener('click',()=>{ addLockpick(5); renderMap(); });
+$('qaTicket').addEventListener('click',()=>{ G.tickets+=10; syncRes(); });
+$('qaCoin').addEventListener('click',()=>{ G.coins+=5000; syncRes(); });
+$('qaForce').addEventListener('change',e=>{ G.forceType=e.target.value; if(G.forceType) toast('Két kế tiếp bị ép: '+G.forceType); });
+$('qaCrew').addEventListener('click',()=>{ CREW.forEach(c=>G.crewOwned[c.id]=true); renderCrew(); toast('Đã mở khoá toàn bộ Đồng bọn'); });
+$('qaArea').addEventListener('click',()=>{ G.areaUnlocked=AREAS.length; toast('Đã mở khoá toàn bộ Khu vực'); renderMap(); });
+$('qaDriver').addEventListener('click',()=>{ G.driverUsed=false; toast('Perk Tài xế đã sẵn sàng'); });
+$('qaReset').addEventListener('click',()=>location.reload());
+$('qaCopy').addEventListener('click',()=>{
+  const txt=EVENTS.map(e=>`${e.t}\t${e.name}\t${JSON.stringify(e.params)}`).join('\n');
+  navigator.clipboard?.writeText(txt).then(()=>toast('Đã copy '+EVENTS.length+' event'),()=>toast('Không copy được'));
+});
+
+/* đổi khu vực nhanh bằng cách bấm vào icon khu vực (chỉ khu đã mở) */
+$('areaIcon').addEventListener('click',()=>{
+  G.areaIdx=(G.areaIdx+1)%G.areaUnlocked;
+  track('area_switch',{area:G.areaIdx+1});
+  renderMap();
+});
+
+/* =============== 26. Boot =============== */
+function boot(){
+  resize(); resizeMini(); renderMap(); renderCrew(); renderShop(); renderBoard(); drawFeed(); syncRes();
+  $('nav').style.display='flex';
+  track('game_open',{version:'demo_v3'});
+  requestAnimationFrame(frame);
+}
+boot();
+
+</script>
+</body>
+</html>
